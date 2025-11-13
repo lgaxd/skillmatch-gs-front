@@ -8,6 +8,12 @@ const LandingPage = lazy(() =>
   }))
 );
 
+const NotFoundPage = lazy(() =>
+  import("./pages/not-found").then((module) => ({
+    default: module.NotFoundPage,
+  }))
+);
+
 const LoginPage = lazy(() =>
   import("./pages/login").then((module) => ({
     default: module.LoginPage,
@@ -19,6 +25,7 @@ function App() {
     <Router>
       <Suspense fallback={<Loading message="Carregando página..." />}>
         <Routes>
+          <Route path="*" element={<NotFoundPage />} />
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
         </Routes>

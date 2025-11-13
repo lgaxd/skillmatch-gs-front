@@ -20,6 +20,12 @@ const LoginPage = lazy(() =>
   }))
 );
 
+const Cadastro = lazy(() =>
+  import("./pages/cadastro").then((module) => ({
+    default: module.Cadastro,
+  }))
+);
+
 function App() {
   return (
     <Router>
@@ -28,6 +34,7 @@ function App() {
           <Route path="*" element={<NotFoundPage />} />
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/cadastro" element={<Cadastro />} />
         </Routes>
       </Suspense>
     </Router>

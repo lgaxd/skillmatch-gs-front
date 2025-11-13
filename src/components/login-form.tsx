@@ -103,7 +103,7 @@ export default function LoginForm({
                             type="button"
                             onClick={() => setShowPassword((s) => !s)}
                             aria-pressed={showPassword}
-                            className="px-3 py-2 border border-gray-300 rounded bg-white hover:bg-gray-50 transition-colors cursor-pointer"
+                            className="px-3 py-2 border border-gray-300 rounded-xl bg-white hover:bg-gray-50 transition-colors cursor-pointer"
                         >
                             {showPassword ? "Ocultar" : "Mostrar"}
                         </button>
@@ -121,7 +121,7 @@ export default function LoginForm({
                         type="checkbox"
                         checked={remember}
                         onChange={(e) => setRemember(e.target.checked)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
                     />
                     <label htmlFor="login-remember" className="text-gray-700">
                         Manter-me conectado
@@ -132,7 +132,7 @@ export default function LoginForm({
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-2.5 px-3 bg-blue-600 text-white rounded border-none cursor-pointer hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                        className="text-lg font-semibold w-full py-2.5 px-3 bg-indigo-600 text-white rounded-xl border-none cursor-pointer hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors transform hover:scale-[1.01]"
                     >
                         {loading ? "Entrando..." : submitLabel}
                     </button>

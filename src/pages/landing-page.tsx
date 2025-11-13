@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/SkillMatch-logo.png";
 import { BackgroundPrincipal } from "../components/background-principal";
+import BotaoPersonalizado from "../components/botao-personalizado";
 
 export function LandingPage() {
     const navigate = useNavigate();
@@ -20,19 +21,15 @@ export function LandingPage() {
 
             {/* Botões */}
             <div className="relative z-10 flex flex-col sm:flex-row gap-6">
-                <button
+                <BotaoPersonalizado
+                    texto="Começar"
                     onClick={() => navigate("/cadastro")}
-                        className="px-10 py-3 border-2 border-black rounded-lg text-lg font-medium text-white bg-transparent hover:bg-black hover:text-white transition-colors duration-200 cursor-pointer"
-                >
-                    Começar
-                </button>
+                />
 
-                <button
+                <BotaoPersonalizado
+                    texto="Já sou membro"
                     onClick={() => navigate("/login")}
-                        className="px-10 py-3 border-2 border-black rounded-lg text-lg font-medium text-white bg-transparent hover:bg-black hover:text-white transition-colors duration-200 cursor-pointer"
-                >
-                    Já sou membro
-                </button>
+                />
             </div>
         </div>
     );

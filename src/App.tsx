@@ -50,6 +50,30 @@ const Ranking = lazy(() =>
   }))
 );
 
+const Perfil = lazy(() =>
+  import("./pages/perfil").then((module) => ({
+    default: module.Perfil,
+  }))
+);
+
+const Sobre = lazy(() =>
+  import("./pages/sobre").then((module) => ({
+    default: module.Sobre,
+  }))
+);
+
+const Integrantes = lazy(() =>
+  import("./pages/integrantes").then((module) => ({
+    default: module.Integrantes,
+  }))
+);
+
+const FAQ = lazy(() =>
+  import("./pages/faq").then((module) => ({
+    default: module.FAQ,
+  }))
+);
+
 function App() {
   return (
     <Router>
@@ -63,6 +87,10 @@ function App() {
           <Route path="/recomendacoes" element={<Recomendacoes />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/ranking" element={<Ranking />} />
+          <Route path="/perfil" element={<Perfil />} />
+          <Route path="/sobre" element={<Sobre />} />
+          <Route path="/integrantes" element={<Integrantes />} />
+          <Route path="/faq" element={<FAQ />} />
         </Routes>
       </Suspense>
     </Router>

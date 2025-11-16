@@ -32,6 +32,12 @@ const FormularioPerfil = lazy(() =>
   }))
 );
 
+const Recomendacoes = lazy(() =>
+  import("./pages/recomendacoes").then((module) => ({
+    default: module.Recomendacoes,
+  }))
+);
+
 function App() {
   return (
     <Router>
@@ -42,6 +48,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/cadastro" element={<Cadastro />} />
           <Route path="/formulario-perfil" element={<FormularioPerfil />} />
+          <Route path="/recomendacoes" element={<Recomendacoes />} />
         </Routes>
       </Suspense>
     </Router>

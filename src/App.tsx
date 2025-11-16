@@ -74,6 +74,12 @@ const FAQ = lazy(() =>
   }))
 );
 
+const Trilha = lazy(() =>
+  import("./pages/trilha").then((module) => ({
+    default: module.Trilha,
+  }))
+);
+
 function App() {
   return (
     <Router>
@@ -91,6 +97,7 @@ function App() {
           <Route path="/sobre" element={<Sobre />} />
           <Route path="/integrantes" element={<Integrantes />} />
           <Route path="/faq" element={<FAQ />} />
+          <Route path="/trilha/:idCarreira" element={<Trilha />} />
         </Routes>
       </Suspense>
     </Router>

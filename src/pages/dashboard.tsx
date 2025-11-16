@@ -298,7 +298,7 @@ export function Dashboard() {
                 <h2 className="text-xl font-bold text-gray-800">Ranking Mensal</h2>
                 <button 
                   onClick={handleVerRanking}
-                  className="text-indigo-600 hover:text-indigo-700 font-semibold text-sm"
+                  className="text-indigo-600 hover:text-indigo-700 font-semibold text-sm cursor-pointer"
                 >
                   Ver ranking completo
                 </button>

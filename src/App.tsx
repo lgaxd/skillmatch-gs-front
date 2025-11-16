@@ -44,6 +44,12 @@ const Dashboard = lazy(() =>
   }))
 );
 
+const Ranking = lazy(() =>
+  import("./pages/ranking").then((module) => ({
+    default: module.Ranking,
+  }))
+);
+
 function App() {
   return (
     <Router>
@@ -56,6 +62,7 @@ function App() {
           <Route path="/formulario-perfil" element={<FormularioPerfil />} />
           <Route path="/recomendacoes" element={<Recomendacoes />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/ranking" element={<Ranking />} />
         </Routes>
       </Suspense>
     </Router>

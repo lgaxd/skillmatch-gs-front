@@ -1,11 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-interface User {
-  id: number;
-  nome: string;
-  email: string;
-}
+import type { User } from '../types/user';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -19,9 +14,11 @@ export const useAuth = () => {
         if (token) {
           // Simulação - futuramente buscar da API
           setUser({
-            id: 1,
-            nome: 'João Silva',
-            email: 'joao.silva@email.com'
+            id_usuario: 1,
+            nome_usuario: 'João Silva',
+            email_usuario: 'joao.silva@email.com',
+            data_nascimento: '1990-01-01',
+            data_cadastro: '2023-01-01'
           });
         }
       } catch (error) {
@@ -36,7 +33,13 @@ export const useAuth = () => {
 
   const login = async (email: string, password: string) => {
     // Futuramente integrar com API
-    const mockUser = { id: 1, nome: 'João Silva', email };
+    const mockUser = {
+            id_usuario: 1,
+            nome_usuario: 'João Silva',
+            email_usuario: 'joao.silva@email.com',
+            data_nascimento: '1990-01-01',
+            data_cadastro: '2023-01-01'
+          };
     setUser(mockUser);
     localStorage.setItem('userToken', 'mock-token');
   };

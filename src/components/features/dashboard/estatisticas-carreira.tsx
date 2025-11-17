@@ -1,20 +1,11 @@
 import React from 'react';
 import { Card } from '../../ui/layout/card';
 import { calcularNivel } from '../../../utils/calculations';
+import type { CarreiraUsuario, ProgressoCursos } from '../../../types/api';
 
 interface EstatisticasCarreiraProps {
-  carreira: {
-    nome_carreira: string;
-    area_atuacao: string;
-    xp_total: number;
-    status_jornada: string;
-    data_inicio?: string;
-  };
-  progressoCursos: {
-    cursos_concluidos: number;
-    cursos_andamento: number;
-    total_cursos: number;
-  };
+  carreira: CarreiraUsuario;
+  progressoCursos: ProgressoCursos;
 }
 
 export const EstatisticasCarreira: React.FC<EstatisticasCarreiraProps> = ({

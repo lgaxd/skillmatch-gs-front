@@ -12,14 +12,41 @@ import { ProgressBar } from "../components/ui/layout/progress-bar";
 
 export function Dashboard() {
   const navigate = useNavigate();
-  const { dashboardData, isLoading } = useDashboard();
+  const { dashboardData, isLoading, error } = useDashboard();
 
-  if (isLoading || !dashboardData) {
+  // Loading state
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <BackgroundPrincipal />
         <div className="relative z-10">
           <Loading message="Carregando seu dashboard..." size="lg" />
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !dashboardData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <BackgroundPrincipal />
+        <div className="relative z-10 bg-white rounded-2xl p-8 shadow-2xl">
+          <div className="text-center">
+            <div className="text-6xl mb-4">😕</div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Ops! Algo deu errado
+            </h2>
+            <p className="text-gray-600 mb-6">
+              {error || "Não foi possível carregar o dashboard"}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors cursor-pointer"
+            >
+              Tentar Novamente
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -73,7 +100,19 @@ export function Dashboard() {
 }
 
 // Subcomponente Header do Dashboard
-const DashboardHeader = ({ usuario, carreira, onVerPerfil, onTrocarCarreira }: any) => {
+interface DashboardHeaderProps {
+  usuario: any;
+  carreira: any;
+  onVerPerfil: () => void;
+  onTrocarCarreira: () => void;
+}
+
+const DashboardHeader: React.FC<DashboardHeaderProps> = ({ 
+  usuario, 
+  carreira, 
+  onVerPerfil, 
+  onTrocarCarreira 
+}) => {
   const nivelAtual = calcularNivel(carreira.xp_total);
   const { progresso } = calcularProgressoNivel(carreira.xp_total, nivelAtual);
 

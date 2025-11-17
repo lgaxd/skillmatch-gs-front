@@ -176,8 +176,6 @@ export function Trilha() {
     const carregarTrilha = async () => {
       setIsLoading(true);
       try {
-        // Simulação de chamada à API
-        await new Promise(resolve => setTimeout(resolve, 1500));
         
         // Aqui viriam as chamadas reais para a API baseadas no seu schema:
         // - TB_CARREIRA + TB_AREAS_ATUACAO (dados da carreira)

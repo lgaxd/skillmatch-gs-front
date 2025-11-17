@@ -76,7 +76,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       {/* Lista de itens */}
       <nav className="mt-2 px-4 space-y-2">
         <ul className="space-y-2">
-          {filteredMenuItems.map((item, index) => (
+          {filteredMenuItems.map((item) => (
             <li
               key={item.path}
               onClick={() => handleNavigation(item.path)}

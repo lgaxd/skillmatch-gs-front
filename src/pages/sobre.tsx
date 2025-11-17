@@ -47,10 +47,10 @@ export function Sobre() {
       <div className="relative z-10 max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-white mb-4">
+          <h1 className="text-4xl font-bold text-black mb-4">
             Sobre o SkillMatch 🌟
           </h1>
-          <p className="text-xl text-white opacity-90 max-w-3xl mx-auto">
+          <p className="text-xl text-black opacity-90 max-w-3xl mx-auto">
             Conectando talentos às carreiras do futuro através de inteligência artificial e educação personalizada
           </p>
         </div>
@@ -191,7 +191,7 @@ export function Sobre() {
                 <BotaoPersonalizado
                   texto="Começar Agora"
                   onClick={() => navigate("/cadastro")}
-                  className="bg-white text-indigo-600 hover:bg-gray-100"
+                  className="text-indigo-600 hover:bg-gray-100"
                 />
                 <button
                   onClick={() => navigate("/integrantes")}

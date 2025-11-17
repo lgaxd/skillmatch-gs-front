@@ -79,7 +79,7 @@ export const AtividadesRecentes: React.FC = () => {
               className={`flex items-center gap-4 p-3 ${config.bgColor} rounded-lg border ${config.borderColor}`}
             >
               <div className={`w-10 h-10 ${config.bgColor.replace('50', '100')} rounded-full flex items-center justify-center`}>
-                <span className={`text-${config.color}-600`}>{config.icone}</span>
+                <span className={`text-${config.cor}-600`}>{config.icone}</span>
               </div>
               <div className="flex-1">
                 <p className="font-semibold text-gray-800">{atividade.titulo}</p>

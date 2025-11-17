@@ -103,9 +103,6 @@ function App() {
           <Route path="/login" element={<WithoutLayout><LoginPage /></WithoutLayout>} />
           <Route path="/cadastro" element={<WithoutLayout><Cadastro /></WithoutLayout>} />
           <Route path="/formulario-perfil" element={<WithoutLayout><FormularioPerfil /></WithoutLayout>} />
-          <Route path="/sobre" element={<WithoutLayout><Sobre /></WithoutLayout>} />
-          <Route path="/integrantes" element={<WithoutLayout><Integrantes /></WithoutLayout>} />
-          <Route path="/faq" element={<WithoutLayout><FAQ /></WithoutLayout>} />
           
           {/* Páginas autenticadas com layout */}
           <Route path="/dashboard" element={<WithLayout><Dashboard /></WithLayout>} />
@@ -113,6 +110,9 @@ function App() {
           <Route path="/recomendacoes" element={<WithLayout><Recomendacoes /></WithLayout>} />
           <Route path="/ranking" element={<WithLayout><Ranking /></WithLayout>} />
           <Route path="/perfil" element={<WithLayout><Perfil /></WithLayout>} />
+          <Route path="/sobre" element={<WithLayout><Sobre /></WithLayout>} />
+          <Route path="/integrantes" element={<WithLayout><Integrantes /></WithLayout>} />
+          <Route path="/faq" element={<WithLayout><FAQ /></WithLayout>} />
           
           {/* 404 */}
           <Route path="*" element={<WithoutLayout><NotFoundPage /></WithoutLayout>} />

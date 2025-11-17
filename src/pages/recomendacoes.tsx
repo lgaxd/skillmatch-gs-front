@@ -180,13 +180,13 @@ export function Recomendacoes() {
             <div className="relative z-10 max-w-6xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-white mb-4">
+                    <h1 className="text-4xl font-bold text-black mb-4">
                         Suas Recomendações de Carreira
                     </h1>
-                    <p className="text-xl text-white opacity-90 mb-2">
+                    <p className="text-xl text-black opacity-90 mb-2">
                         Baseado no seu perfil, encontramos estas opções alinhadas com você
                     </p>
-                    <p className="text-white opacity-80">
+                    <p className="text-black opacity-80">
                         💡 Ordenadas por nível de compatibilidade com suas skills e interesses
                     </p>
                 </div>

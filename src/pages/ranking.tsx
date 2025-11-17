@@ -137,8 +137,6 @@ export function Ranking() {
     const carregarRanking = async () => {
       setIsLoading(true);
       try {
-        // Simulação de chamada à API
-        await new Promise(resolve => setTimeout(resolve, 1000));
         
         // Aqui viriam as chamadas reais para a API baseadas no seu schema:
         // - TB_RANKING (posições do mês)
@@ -224,10 +222,10 @@ export function Ranking() {
       <div className="relative z-10 max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-4">
+          <h1 className="text-4xl font-bold text-black mb-4">
             Ranking Mensal 🏆
           </h1>
-          <p className="text-xl text-white opacity-90">
+          <p className="text-xl text-black opacity-90">
             Os usuários com maior pontuação deste mês
           </p>
         </div>

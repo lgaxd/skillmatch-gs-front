@@ -28,7 +28,7 @@ export function Header({ onMenuClick }: HeaderProps) {
     };
 
     const handleHomeClick = () => {
-        navigate('/');
+        navigate('/dashboard');
     };
 
     const handleProfileClick = () => {

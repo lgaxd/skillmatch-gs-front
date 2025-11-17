@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { BackgroundPrincipal } from "../components/background-principal";
 import  notFoundImage from "../assets/erro-404.png";
-import BotaoPersonalizado from "../components/botao-personalizado";
+import BotaoPersonalizado from "../components/ui/buttons/botao-personalizado";
 
 export function NotFoundPage() {
     const navigate = useNavigate();

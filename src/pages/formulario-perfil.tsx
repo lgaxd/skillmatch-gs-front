@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { BackgroundPrincipal } from "../components/background-principal";
-import BotaoPersonalizado from "../components/botao-personalizado";
-import { SelectPersonalizado } from "../components/select-personalizado";
+import BotaoPersonalizado from "../components/ui/buttons/botao-personalizado";
+import { SelectPersonalizado } from "../components/ui/forms/select-personalizado";
 
 interface FormData {
   experienciaAnos: string;

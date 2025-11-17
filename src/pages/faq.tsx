@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { BackgroundPrincipal } from "../components/background-principal";
-import BotaoPersonalizado from "../components/botao-personalizado";
+import BotaoPersonalizado from "../components/ui/buttons/botao-personalizado";
 
 interface FaqItem {
   pergunta: string;

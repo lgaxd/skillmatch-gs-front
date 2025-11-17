@@ -1,10 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { BackgroundPrincipal } from "../components/background-principal";
-import BotaoPersonalizado from "../components/botao-personalizado";
-import { InputPersonalizado } from "../components/input-personalizado";
-import { SelectPersonalizado } from "../components/select-personalizado";
-import { PasswordStrength } from "../components/password-strength";
+import BotaoPersonalizado from "../components/ui/buttons/botao-personalizado";
+import { InputPersonalizado } from "../components/ui/forms/input-personalizado";
+import { SelectPersonalizado } from "../components/ui/forms/select-personalizado";
+import { PasswordStrength } from "../components/ui/forms/password-strength";
 
 interface FormData {
   nomeCompleto: string;

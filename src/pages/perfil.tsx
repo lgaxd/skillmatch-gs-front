@@ -1,10 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { BackgroundPrincipal } from "../components/background-principal";
-import BotaoPersonalizado from "../components/botao-personalizado";
-import { Loading } from "../components/loading";
-import { InputPersonalizado } from "../components/input-personalizado";
-import { SelectPersonalizado } from "../components/select-personalizado";
+import BotaoPersonalizado from "../components/ui/buttons/botao-personalizado";
+import { Loading } from "../components/ui/feedback/loading";
+import { InputPersonalizado } from "../components/ui/forms/input-personalizado";
+import { SelectPersonalizado } from "../components/ui/forms/select-personalizado";
 
 interface Usuario {
   id_usuario: number;

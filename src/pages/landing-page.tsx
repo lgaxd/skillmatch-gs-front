@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/SkillMatch-logo.png";
 import { BackgroundPrincipal } from "../components/background-principal";
-import BotaoPersonalizado from "../components/botao-personalizado";
+import BotaoPersonalizado from "../components/ui/buttons/botao-personalizado";
 
 export function LandingPage() {
     const navigate = useNavigate();

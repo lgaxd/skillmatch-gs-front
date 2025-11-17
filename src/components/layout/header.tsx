@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import logo from "../assets/SkillMatch-logo-notext.png";
+import logo from "../../assets/SkillMatch-logo-notext.png";
 
 interface HeaderProps {
     onMenuClick: () => void;

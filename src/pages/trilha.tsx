@@ -1,8 +1,8 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { BackgroundPrincipal } from "../components/background-principal";
-import BotaoPersonalizado from "../components/botao-personalizado";
-import { Loading } from "../components/loading";
+import BotaoPersonalizado from "../components/ui/buttons/botao-personalizado";
+import { Loading } from "../components/ui/feedback/loading";
 
 interface Skill {
   id_skill: number;
@@ -305,10 +305,10 @@ export function Trilha() {
       <div className="relative z-10 max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-4">
+          <h1 className="text-4xl font-bold text-black mb-4">
             Sua Jornada em {carreira.nome_carreira} 🚀
           </h1>
-          <p className="text-xl text-white opacity-90">
+          <p className="text-xl text-black opacity-90">
             {carreira.area_atuacao} • Siga a trilha para dominar as skills necessárias
           </p>
         </div>

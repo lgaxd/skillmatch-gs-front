@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { BackgroundPrincipal } from "../components/background-principal";
-import LoginForm from "../components/login-form";
-import BotaoPersonalizado from "../components/botao-personalizado";
+import LoginForm from "../components/auth/login-form";
+import BotaoPersonalizado from "../components/ui/buttons/botao-personalizado";
 
 export function LoginPage() {
     const navigate = useNavigate();

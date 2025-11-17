@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
-import { Loading } from "./components/loading";
-import { Layout } from "./components/layout";
+import { Loading } from "./components/ui/feedback/loading";
+import { Layout } from "./components/layout/layout";
 
 // Páginas com Layout (autenticadas)
 const Dashboard = lazy(() =>

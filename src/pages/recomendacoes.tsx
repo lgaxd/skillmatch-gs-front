@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { BackgroundPrincipal } from "../components/background-principal";
-import BotaoPersonalizado from "../components/botao-personalizado";
-import { Loading } from "../components/loading";
+import BotaoPersonalizado from "../components/ui/buttons/botao-personalizado";
+import { Loading } from "../components/ui/feedback/loading";
 
 interface Carreira {
     id: string;

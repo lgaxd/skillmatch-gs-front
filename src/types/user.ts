@@ -1,9 +1,10 @@
 export interface User {
-  id_usuario: number;
-  nome_usuario: string;
-  email_usuario: string;
-  data_nascimento: string;
-  data_cadastro: string;
+  id: number;
+  nome: string;
+  dataNascimento: string;
+  // Propriedades opcionais que podem não estar na API inicial
+  email?: string;
+  dataCadastro?: string;
   genero?: string;
   telefone?: string;
 }

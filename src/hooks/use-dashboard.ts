@@ -21,6 +21,10 @@ export const useDashboard = () => {
         const userId = authService.getCurrentUserId();
         console.log(`📊 Buscando dashboard para usuário ${userId}...`);
         
+        if (!userId) {
+          throw new Error('Usuário não autenticado');
+        }
+
         // Fazer chamada REAL para a API
         console.log(`🌐 Chamando: http://localhost:8080/usuarios/${userId}/dashboard`);
         const data = await apiService.getDashboard(userId);
@@ -55,12 +59,7 @@ export const useDashboard = () => {
     hasData: !!dashboardData, 
     isLoading, 
     error,
-    dataStructure: dashboardData ? {
-      hasUsuario: !!dashboardData.usuario,
-      hasCarreira: !!dashboardData.carreira,
-      hasProgresso: !!dashboardData.progressoCursos,
-      hasRanking: !!dashboardData.ranking
-    } : 'no data'
+    dashboardData
   });
 
   return {
@@ -72,33 +71,9 @@ export const useDashboard = () => {
 
 // Dados mockados apenas para fallback em caso de erro
 const mockData: DashboardData = {
-  usuario: {
-    id_usuario: 1,
-    nome_usuario: "João Silva",
-    email_usuario: "joao.silva@email.com",
-    data_nascimento: "1990-05-15",
-    data_cadastro: "2024-01-15",
-    genero: "Masculino",
-    telefone: "(11) 99999-9999"
-  },
-  carreira: {
-    id_carreira: 1,
-    nome_carreira: "Desenvolvedor Front-end",
-    area_atuacao: "Programação",
-    progresso_percentual: 25.50,
-    xp_total: 1250,
-    data_inicio: "2024-01-15",
-    status_jornada: "Em Andamento"
-  },
-  progressoCursos: {
-    cursos_concluidos: 2,
-    cursos_andamento: 1,
-    cursos_pendentes: 7,
-    total_cursos: 10
-  },
-  ranking: {
-    posicao: 7,
-    pontuacao_total: 1250,
-    mes_referencia: "2024-01"
-  }
+  nomeUsuario: "João Silva",
+  carreiraAtual: "Desenvolvedor Front-end",
+  progressoCarreira: 25.50,
+  xpTotal: 1250,
+  cursosConcluidos: 2
 };

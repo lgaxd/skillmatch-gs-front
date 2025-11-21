@@ -87,36 +87,46 @@ export function Dashboard() {
     );
   }
 
-  // Dados padrão para evitar undefined
-  const defaultCarreira: CarreiraUsuario = {
-    id_carreira: 0,
-    nome_carreira: 'Nenhuma carreira selecionada',
-    area_atuacao: 'Selecione uma carreira',
-    progresso_percentual: 0,
-    xp_total: 0,
-    data_inicio: '',
-    status_jornada: 'Não Iniciada'
+  // Dados padrão baseados na estrutura real da API
+  const { 
+    nomeUsuario,
+    carreiraAtual,
+    progressoCarreira,
+    xpTotal,
+    cursosConcluidos
+  } = dashboardData;
+
+  // Criar estrutura compatível com os componentes
+  const carreiraCompativel: CarreiraUsuario = {
+    id: 1,
+    usuario: {
+      id: 1,
+      nome: nomeUsuario,
+      dataNascimento: ""
+    },
+    carreira: {
+      id: 1,
+      nome: carreiraAtual,
+      descricao: carreiraAtual
+    },
+    idStatusJornada: 2, // Em Andamento
+    progresso: progressoCarreira,
+    xp: xpTotal,
+    data_inicio: new Date().toISOString().split('T')[0]
   };
 
-  const { 
-    usuario = { 
-      id_usuario: 0, 
-      nome_usuario: 'Usuário', 
-      email_usuario: '' 
-    },
-    carreira = defaultCarreira,
-    progressoCursos = {
-      cursos_concluidos: 0,
-      cursos_andamento: 0,
-      cursos_pendentes: 0,
-      total_cursos: 0
-    },
-    ranking = {
-      posicao: 0,
-      pontuacao_total: 0,
-      mes_referencia: '2024-01'
-    }
-  } = dashboardData;
+  const progressoCursosCompativel = {
+    cursos_concluidos: cursosConcluidos,
+    cursos_andamento: Math.max(0, 3 - cursosConcluidos), // Estimativa
+    cursos_pendentes: Math.max(0, 10 - cursosConcluidos), // Estimativa
+    total_cursos: 10
+  };
+
+  const rankingCompativel = {
+    posicao: 7, // Valor padrão
+    pontuacao_total: xpTotal,
+    mes_referencia: new Date().toISOString().slice(0, 7) // YYYY-MM
+  };
 
   return (
     <div className="relative min-h-screen py-8 px-4 sm:px-6 lg:px-8">
@@ -126,8 +136,8 @@ export function Dashboard() {
         {/* Header do Dashboard */}
         <Card className="mb-8" padding="lg">
           <DashboardHeader 
-            usuario={usuario}
-            carreira={carreira}
+            usuario={{ nome: nomeUsuario }}
+            carreira={carreiraCompativel}
             onVerPerfil={() => navigate('/perfil')}
             onTrocarCarreira={() => navigate('/recomendacoes')}
           />
@@ -137,11 +147,11 @@ export function Dashboard() {
           {/* Coluna 1: Progresso e Ações Rápidas */}
           <div className="lg:col-span-2 space-y-8">
             <ProgressoJornada 
-              carreira={carreira}
-              progressoCursos={progressoCursos}
+              carreira={carreiraCompativel}
+              progressoCursos={progressoCursosCompativel}
               onContinuarJornada={() => {
-                if (carreira.id_carreira && carreira.id_carreira > 0) {
-                  navigate(`/trilha/${carreira.id_carreira}`);
+                if (carreiraCompativel.id && carreiraCompativel.id > 0) {
+                  navigate(`/trilha/${carreiraCompativel.id}`);
                 } else {
                   navigate('/recomendacoes');
                 }
@@ -154,13 +164,13 @@ export function Dashboard() {
           {/* Coluna 2: Ranking e Estatísticas */}
           <div className="space-y-8">
             <RankingCard 
-              ranking={ranking}
+              ranking={rankingCompativel}
               onVerRanking={() => navigate('/ranking')}
             />
             
             <EstatisticasCarreira 
-              carreira={carreira}
-              progressoCursos={progressoCursos}
+              carreira={carreiraCompativel}
+              progressoCursos={progressoCursosCompativel}
             />
           </div>
         </div>
@@ -169,9 +179,9 @@ export function Dashboard() {
   );
 }
 
-// Subcomponente Header do Dashboard com verificações de segurança
+// Subcomponente Header do Dashboard
 interface DashboardHeaderProps {
-  usuario: any;
+  usuario: { nome: string };
   carreira: CarreiraUsuario;
   onVerPerfil: () => void;
   onTrocarCarreira: () => void;
@@ -183,11 +193,9 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   onVerPerfil, 
   onTrocarCarreira 
 }) => {
-  // Verificações de segurança
-  const nomeUsuario = usuario?.nome_usuario || 'Usuário';
-  const nomeCarreira = carreira?.nome_carreira || 'Nenhuma carreira selecionada';
-  const areaCarreira = carreira?.area_atuacao || 'Selecione uma carreira';
-  const xpTotal = carreira?.xp_total || 0;
+  const nomeUsuario = usuario?.nome || 'Usuário';
+  const nomeCarreira = carreira?.carreira?.nome || 'Nenhuma carreira selecionada';
+  const xpTotal = carreira?.xp || 0;
   
   const nivelAtual = calcularNivel(xpTotal);
   const { progresso } = calcularProgressoNivel(xpTotal, nivelAtual);
@@ -199,7 +207,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           Bem-vindo de volta, {nomeUsuario}! 👋
         </h1>
         <p className="text-gray-600 mb-4">
-          Continue sua jornada em <strong>{nomeCarreira}</strong> - {areaCarreira}
+          Continue sua jornada em <strong>{nomeCarreira}</strong>
         </p>
         <div className="flex items-center gap-6">
           <div className="text-center">

@@ -29,16 +29,16 @@ export function Recomendacoes() {
             setIsLoading(true);
             try {
                 const recomendacoesSalvas = localStorage.getItem('recomendacoesKNN');
-                
+
                 if (recomendacoesSalvas) {
                     const data = JSON.parse(recomendacoesSalvas);
                     console.log("Dados das recomendações:", data);
-                    
+
                     if (data.recomendacoes && Array.isArray(data.recomendacoes)) {
                         // Converter recomendações da API para o formato do componente
                         const carreirasFormatadas = data.recomendacoes.map((rec: any, index: number) => {
                             const alinhamento = Math.max(70, 100 - (rec.distancia * 20));
-                            
+
                             return {
                                 id: (index + 1).toString(),
                                 nome: rec.carreira,
@@ -51,7 +51,7 @@ export function Recomendacoes() {
                                 alinhamento: alinhamento
                             };
                         });
-                        
+
                         setCarreiras(carreirasFormatadas);
                     } else {
                         // Estrutura inválida, usar mock
@@ -78,20 +78,23 @@ export function Recomendacoes() {
 
         try {
             const userId = authService.getCurrentUserId();
-            
-            // Tentar salvar no backend
+
+            // Selecionar carreira no backend
+            await apiService.selectCarreira(userId, parseInt(carreiraId));
+            console.log("Carreira selecionada no backend:", carreiraId);
+
+            // Adicionar XP inicial por selecionar carreira
             try {
-                await apiService.selectCarreira(userId, parseInt(carreiraId));
-                console.log("Carreira selecionada no backend:", carreiraId);
-            } catch (error) {
-                console.error("Erro ao salvar carreira no backend:", error);
-                // Continuar mesmo com erro
+                await apiService.addXP(userId, 100);
+            } catch (xpError) {
+                console.log("XP não adicionado, mas continuando...");
             }
 
             // Redireciona para o dashboard
             navigate("/dashboard");
         } catch (error) {
             console.error("Erro ao selecionar carreira:", error);
+            alert("Erro ao selecionar carreira. Tente novamente.");
         } finally {
             setIsLoading(false);
         }
@@ -108,7 +111,7 @@ export function Recomendacoes() {
             const perfilSalvo = localStorage.getItem('perfilUsuario');
             if (perfilSalvo) {
                 const perfil = JSON.parse(perfilSalvo);
-                
+
                 // Re-processar perfil
                 const skillsParaKNN = {
                     Engenharia_Software: parseInt(perfil.interessesTecnologia) || 5,
@@ -126,7 +129,7 @@ export function Recomendacoes() {
 
                 const recomendacoes = await apiService.getRecomendacoesKNN(skillsParaKNN);
                 localStorage.setItem('recomendacoesKNN', JSON.stringify(recomendacoes));
-                
+
                 // Recarregar a página
                 window.location.reload();
             }
@@ -277,8 +280,8 @@ export function Recomendacoes() {
                                     <div className="w-full bg-gray-200 rounded-full h-2">
                                         <div
                                             className={`h-2 rounded-full ${carreira.alinhamento >= 90 ? 'bg-green-500' :
-                                                    carreira.alinhamento >= 80 ? 'bg-blue-500' :
-                                                        carreira.alinhamento >= 70 ? 'bg-yellow-500' : 'bg-gray-500'
+                                                carreira.alinhamento >= 80 ? 'bg-blue-500' :
+                                                    carreira.alinhamento >= 70 ? 'bg-yellow-500' : 'bg-gray-500'
                                                 }`}
                                             style={{ width: `${carreira.alinhamento}%` }}
                                         />
@@ -289,9 +292,8 @@ export function Recomendacoes() {
                                 <button
                                     onClick={() => handleSelecionarCarreira(carreira.id)}
                                     disabled={isLoading && carreiraSelecionada === carreira.id}
-                                    className={`w-full px-6 py-3 text-white bg-indigo-600 rounded-xl font-semibold transition-all duration-300 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transform hover:scale-[1.02] ${
-                                        isLoading && carreiraSelecionada === carreira.id ? 'opacity-50 cursor-not-allowed' : ''
-                                    }`}
+                                    className={`w-full px-6 py-3 text-white bg-indigo-600 rounded-xl font-semibold transition-all duration-300 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transform hover:scale-[1.02] ${isLoading && carreiraSelecionada === carreira.id ? 'opacity-50 cursor-not-allowed' : ''
+                                        }`}
                                 >
                                     {isLoading && carreiraSelecionada === carreira.id
                                         ? "Selecionando..."

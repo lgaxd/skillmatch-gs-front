@@ -3,28 +3,11 @@ import { useState, useEffect } from "react";
 import { BackgroundPrincipal } from "../components/background-principal";
 import { Loading } from "../components/ui/feedback/loading";
 import { InputPersonalizado } from "../components/ui/forms/input-personalizado";
-import { SelectPersonalizado } from "../components/ui/forms/select-personalizado";
 import { apiService } from "../services/api";
 import { authService } from "../services/auth";
-
-interface Usuario {
-  id_usuario: number;
-  nome_usuario: string;
-  email_usuario: string;
-  data_nascimento: string;
-  data_cadastro: string;
-  genero?: string;
-  telefone?: string;
-}
-
-interface CarreiraUsuario {
-  nome_carreira: string;
-  area_atuacao: string;
-  progresso_percentual: number;
-  xp_total: number;
-  data_inicio: string;
-  status_jornada: string;
-}
+import { calcularNivel } from "../utils/calculations";
+import type { CarreiraUsuario, DashboardData } from "../types/api";
+import type { User } from "../types/user";
 
 interface Estatisticas {
   cursos_concluidos: number;
@@ -40,86 +23,129 @@ export function Perfil() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [usuario, setUsuario] = useState<User | null>(null);
   const [carreira, setCarreira] = useState<CarreiraUsuario | null>(null);
   const [estatisticas, setEstatisticas] = useState<Estatisticas | null>(null);
-  const [formData, setFormData] = useState<Partial<Usuario>>({});
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [formData, setFormData] = useState<Partial<User>>({});
 
-  const generos = [
-    { value: "masculino", label: "Masculino" },
-    { value: "feminino", label: "Feminino" },
-    { value: "outro", label: "Outro" },
-    { value: "prefiro_nao_informar", label: "Prefiro não informar" }
-  ];
+  // Função para formatar data
+  const formatarData = (dataString: string) => {
+    if (!dataString) return 'Não informado';
+    try {
+      const data = new Date(dataString);
+      return data.toLocaleDateString('pt-BR');
+    } catch {
+      return 'Data inválida';
+    }
+  };
+
+  // Mapear status da jornada
+  const mapearStatusJornada = (idStatus: number) => {
+    switch (idStatus) {
+      case 1: return 'Não Iniciada';
+      case 2: return 'Em Andamento';
+      case 3: return 'Concluída';
+      case 4: return 'Pausada';
+      default: return 'Em Andamento';
+    }
+  };
+
+  // Função para carregar dados do perfil
+  const carregarPerfil = async () => {
+    setIsLoading(true);
+    try {
+      const userId = authService.getCurrentUserId();
+      
+      if (!userId) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      console.log('🔄 Carregando perfil para usuário:', userId);
+
+      // Carregar dados do usuário
+      const usuarioData = await apiService.getUser(userId);
+      console.log('📊 Dados do usuário:', usuarioData);
+      setUsuario(usuarioData);
+      setFormData(usuarioData);
+
+      // Carregar dashboard para obter dados consolidados
+      try {
+        const dashboard = await apiService.getDashboard(userId);
+        console.log('📈 Dados do dashboard:', dashboard);
+        setDashboardData(dashboard);
+      } catch (error) {
+        console.log('⚠️ Erro ao carregar dashboard:', error);
+      }
+
+      // Carregar carreira atual
+      try {
+        const carreiraData = await apiService.getCarreiraAtual(userId);
+        console.log('🎯 Dados da carreira:', carreiraData);
+        setCarreira(carreiraData);
+      } catch (error) {
+        console.log('⚠️ Usuário sem carreira selecionada:', error);
+        setCarreira(null);
+      }
+
+      // Carregar estatísticas
+      try {
+        const statsData = await apiService.getEstatisticas(userId);
+        console.log('📊 Estatísticas:', statsData);
+
+        const cursosConcluidos = statsData.totalCursosConcluidos || 0;
+        const cursosAndamento = (statsData.totalCursosIniciados || 0) - cursosConcluidos;
+        
+        setEstatisticas({
+          cursos_concluidos: cursosConcluidos,
+          cursos_andamento: Math.max(0, cursosAndamento),
+          total_cursos: 10,
+          skills_completas: Math.floor(cursosConcluidos / 2),
+          total_skills: 12,
+          tempo_total_estudo: cursosConcluidos * 15,
+          dias_consecutivos: statsData.diasConsecutivos || 0
+        });
+      } catch (error) {
+        console.log('⚠️ Erro ao carregar estatísticas:', error);
+        setEstatisticas({
+          cursos_concluidos: 0,
+          cursos_andamento: 0,
+          total_cursos: 10,
+          skills_completas: 0,
+          total_skills: 12,
+          tempo_total_estudo: 0,
+          dias_consecutivos: 0
+        });
+      }
+
+    } catch (error) {
+      console.error("❌ Erro ao carregar perfil:", error);
+      
+      // Dados de fallback mínimos baseados no que a API realmente retorna
+      const usuarioFallback: User = {
+        id: 1,
+        nome: "Usuário",
+        dataNascimento: "1990-01-01"
+      };
+
+      setUsuario(usuarioFallback);
+      setFormData(usuarioFallback);
+      setCarreira(null);
+      setEstatisticas({
+        cursos_concluidos: 0,
+        cursos_andamento: 0,
+        total_cursos: 10,
+        skills_completas: 0,
+        total_skills: 12,
+        tempo_total_estudo: 0,
+        dias_consecutivos: 0
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const carregarPerfil = async () => {
-      setIsLoading(true);
-      try {
-        const userId = authService.getCurrentUserId();
-        
-        // Carregar dados do usuário
-        const usuarioData = await apiService.getUser(userId);
-        setUsuario(usuarioData);
-        setFormData(usuarioData);
-
-        // Carregar carreira atual
-        const carreiraData = await apiService.getCarreiraAtual(userId);
-        setCarreira(carreiraData);
-
-        // Carregar estatísticas
-        const statsData = await apiService.getEstatisticas(userId);
-        setEstatisticas({
-          cursos_concluidos: statsData.totalCursosConcluidos || 0,
-          cursos_andamento: statsData.totalCursosIniciados || 0,
-          total_cursos: 10, // Valor fixo para exemplo
-          skills_completas: 3, // Valor fixo para exemplo
-          total_skills: 12, // Valor fixo para exemplo
-          tempo_total_estudo: 45, // Valor fixo para exemplo
-          dias_consecutivos: 12 // Valor fixo para exemplo
-        });
-
-      } catch (error) {
-        console.error("Erro ao carregar perfil:", error);
-        // Fallback com dados mockados
-        const usuarioMock: Usuario = {
-          id_usuario: 1,
-          nome_usuario: "João Silva",
-          email_usuario: "joao.silva@email.com",
-          data_nascimento: "1990-05-15",
-          data_cadastro: "2024-01-15",
-          genero: "Masculino",
-          telefone: "(11) 99999-9999"
-        };
-
-        const carreiraMock: CarreiraUsuario = {
-          nome_carreira: "Desenvolvedor Front-end",
-          area_atuacao: "Programação",
-          progresso_percentual: 25.50,
-          xp_total: 1250,
-          data_inicio: "2024-01-15",
-          status_jornada: "Em Andamento"
-        };
-
-        const estatisticasMock: Estatisticas = {
-          cursos_concluidos: 2,
-          cursos_andamento: 1,
-          total_cursos: 10,
-          skills_completas: 3,
-          total_skills: 12,
-          tempo_total_estudo: 45,
-          dias_consecutivos: 12
-        };
-
-        setUsuario(usuarioMock);
-        setCarreira(carreiraMock);
-        setEstatisticas(estatisticasMock);
-        setFormData(usuarioMock);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     carregarPerfil();
   }, []);
 
@@ -131,14 +157,24 @@ export function Perfil() {
     setIsLoading(true);
     try {
       const userId = authService.getCurrentUserId();
-      await apiService.updateUser(userId, formData);
-      setUsuario(prev => prev ? { ...prev, ...formData } : null);
+      
+      // Preparar dados para envio no formato exato que a API espera
+      const dadosParaEnvio = {
+        nome: formData.nome,
+        dataNascimento: formData.dataNascimento
+        // A API atual não suporta gênero e telefone
+      };
+
+      await apiService.updateUser(userId, dadosParaEnvio);
+      
+      // Recarregar os dados atualizados
+      await carregarPerfil();
       setIsEditing(false);
+      
+      alert("Perfil atualizado com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar perfil:", error);
-      // Em caso de erro, ainda atualiza localmente para desenvolvimento
-      setUsuario(prev => prev ? { ...prev, ...formData } : null);
-      setIsEditing(false);
+      alert("Erro ao atualizar perfil. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
@@ -149,15 +185,11 @@ export function Perfil() {
     setIsEditing(false);
   };
 
-  const handleInputChange = (field: keyof Usuario, value: string) => {
+  const handleInputChange = (field: keyof User, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const calcularNivel = (xp: number) => {
-    return Math.floor(xp / 500) + 1;
-  };
-
-  if (isLoading || !usuario || !carreira || !estatisticas) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <BackgroundPrincipal />
@@ -168,7 +200,33 @@ export function Perfil() {
     );
   }
 
-  const nivelAtual = calcularNivel(carreira.xp_total);
+  if (!usuario || !estatisticas) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <BackgroundPrincipal />
+        <div className="relative z-10 bg-white rounded-2xl p-8 shadow-2xl max-w-md">
+          <div className="text-center">
+            <div className="text-6xl mb-4">😕</div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Erro ao Carregar Perfil
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Não foi possível carregar seus dados.
+            </p>
+            <button
+              onClick={carregarPerfil}
+              className="w-full px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors cursor-pointer"
+            >
+              Tentar Novamente
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const nivelAtual = calcularNivel(carreira?.xp || dashboardData?.xpTotal || 0);
+  const xpTotal = carreira?.xp || dashboardData?.xpTotal || 0;
 
   return (
     <div className="relative min-h-screen py-8 px-4 sm:px-6 lg:px-8">
@@ -210,36 +268,17 @@ export function Perfil() {
                     <InputPersonalizado
                       label="Nome Completo"
                       type="text"
-                      value={formData.nome_usuario || ''}
-                      onChange={(value) => handleInputChange('nome_usuario', value)}
+                      value={formData.nome || ''}
+                      onChange={(value) => handleInputChange('nome', value)}
                       placeholder="Seu nome completo"
-                    />
-                    <InputPersonalizado
-                      label="E-mail"
-                      type="email"
-                      value={formData.email_usuario || ''}
-                      onChange={(value) => handleInputChange('email_usuario', value)}
-                      placeholder="seu@email.com"
                     />
                     <InputPersonalizado
                       label="Data de Nascimento"
                       type="date"
-                      value={formData.data_nascimento || ''}
-                      onChange={(value) => handleInputChange('data_nascimento', value)}
+                      value={formData.dataNascimento || ''}
+                      onChange={(value) => handleInputChange('dataNascimento', value)}
                     />
-                    <InputPersonalizado
-                      label="Telefone"
-                      type="tel"
-                      value={formData.telefone || ''}
-                      onChange={(value) => handleInputChange('telefone', value)}
-                      placeholder="(11) 99999-9999"
-                    />
-                    <SelectPersonalizado
-                      label="Gênero"
-                      value={formData.genero || ''}
-                      onChange={(value) => handleInputChange('genero', value)}
-                      options={generos}
-                    />
+                    {/* Removidos campos que a API não suporta: email, telefone, gênero */}
                   </div>
                   
                   <div className="flex gap-3 pt-4">
@@ -265,41 +304,27 @@ export function Perfil() {
                       <label className="block text-sm font-medium text-gray-600 mb-1">
                         Nome Completo
                       </label>
-                      <p className="text-gray-800 font-semibold">{usuario.nome_usuario}</p>
+                      <p className="text-gray-800 font-semibold">{usuario.nome}</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-600 mb-1">
-                        E-mail
+                        ID do Usuário
                       </label>
-                      <p className="text-gray-800 font-semibold">{usuario.email_usuario}</p>
+                      <p className="text-gray-800 font-semibold">{usuario.id}</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-600 mb-1">
                         Data de Nascimento
                       </label>
                       <p className="text-gray-800 font-semibold">
-                        {new Date(usuario.data_nascimento).toLocaleDateString('pt-BR')}
+                        {formatarData(usuario.dataNascimento)}
                       </p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-600 mb-1">
-                        Telefone
+                        E-mail
                       </label>
-                      <p className="text-gray-800 font-semibold">{usuario.telefone || 'Não informado'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-1">
-                        Gênero
-                      </label>
-                      <p className="text-gray-800 font-semibold">{usuario.genero || 'Não informado'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-1">
-                        Data de Cadastro
-                      </label>
-                      <p className="text-gray-800 font-semibold">
-                        {new Date(usuario.data_cadastro).toLocaleDateString('pt-BR')}
-                      </p>
+                      <p className="text-gray-800 font-semibold">{usuario.email || 'Não informado'}</p>
                     </div>
                   </div>
                 </div>
@@ -312,45 +337,80 @@ export function Perfil() {
                 Carreira Atual
               </h2>
               
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Carreira:</span>
-                  <span className="font-semibold text-gray-800">{carreira.nome_carreira}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Área:</span>
-                  <span className="font-semibold text-gray-800">{carreira.area_atuacao}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Status:</span>
-                  <span className={`font-semibold ${
-                    carreira.status_jornada === 'Em Andamento' ? 'text-green-600' :
-                    carreira.status_jornada === 'Concluída' ? 'text-blue-600' :
-                    'text-yellow-600'
-                  }`}>
-                    {carreira.status_jornada}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Início:</span>
-                  <span className="font-semibold text-gray-800">
-                    {new Date(carreira.data_inicio).toLocaleDateString('pt-BR')}
-                  </span>
-                </div>
-                
-                <div className="pt-4">
-                  <div className="flex justify-between text-sm text-gray-600 mb-2">
-                    <span>Progresso da Jornada</span>
-                    <span>{carreira.progresso_percentual}%</span>
+              {carreira ? (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Carreira:</span>
+                    <span className="font-semibold text-gray-800">{carreira.carreira?.nome}</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div 
-                      className="bg-green-500 h-3 rounded-full transition-all duration-500"
-                      style={{ width: `${carreira.progresso_percentual}%` }}
-                    />
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Status:</span>
+                    <span className={`font-semibold text-green-600`}>
+                      {mapearStatusJornada(carreira.idStatusJornada)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Progresso:</span>
+                    <span className="font-semibold text-gray-800">{carreira.progresso?.toFixed(1)}%</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">XP Total:</span>
+                    <span className="font-semibold text-gray-800">{carreira.xp} XP</span>
+                  </div>
+                  
+                  <div className="pt-4">
+                    <div className="flex justify-between text-sm text-gray-600 mb-2">
+                      <span>Progresso da Jornada</span>
+                      <span>{carreira.progresso?.toFixed(1)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div 
+                        className="bg-green-500 h-3 rounded-full transition-all duration-500"
+                        style={{ width: `${carreira.progresso || 0}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : dashboardData ? (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Carreira:</span>
+                    <span className="font-semibold text-gray-800">{dashboardData.carreiraAtual}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Progresso:</span>
+                    <span className="font-semibold text-gray-800">{dashboardData.progressoCarreira?.toFixed(1)}%</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">XP Total:</span>
+                    <span className="font-semibold text-gray-800">{dashboardData.xpTotal} XP</span>
+                  </div>
+                  
+                  <div className="pt-4">
+                    <div className="flex justify-between text-sm text-gray-600 mb-2">
+                      <span>Progresso da Jornada</span>
+                      <span>{dashboardData.progressoCarreira?.toFixed(1)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div 
+                        className="bg-green-500 h-3 rounded-full transition-all duration-500"
+                        style={{ width: `${dashboardData.progressoCarreira || 0}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-4xl mb-4">🎯</div>
+                  <p className="text-gray-600 mb-4">Você ainda não selecionou uma carreira</p>
+                  <button
+                    onClick={() => navigate("/recomendacoes")}
+                    className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors cursor-pointer"
+                  >
+                    Escolher Carreira
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -366,7 +426,7 @@ export function Perfil() {
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
                   <div className="text-2xl font-bold text-blue-600">{nivelAtual}</div>
                   <div className="text-sm text-blue-800">Nível Atual</div>
-                  <div className="text-xs text-blue-600">{carreira.xp_total} XP</div>
+                  <div className="text-xs text-blue-600">{xpTotal} XP</div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -397,47 +457,6 @@ export function Perfil() {
               </div>
             </div>
 
-            {/* Card de Conquistas */}
-            <div className="bg-white rounded-2xl shadow-2xl p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-6">
-                Conquistas 🏆
-              </h2>
-              
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                  <div className="text-2xl">🎯</div>
-                  <div>
-                    <p className="font-semibold text-gray-800">Primeiros Passos</p>
-                    <p className="text-sm text-gray-600">Complete seu primeiro curso</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                  <div className="text-2xl">📚</div>
-                  <div>
-                    <p className="font-semibold text-gray-800">Aprendiz Dedicado</p>
-                    <p className="text-sm text-gray-600">Complete 5 cursos</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 bg-gray-100 rounded-lg border border-gray-200 opacity-60">
-                  <div className="text-2xl grayscale">⭐</div>
-                  <div>
-                    <p className="font-semibold text-gray-500">Skill Master</p>
-                    <p className="text-sm text-gray-400">Domine 10 skills</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 bg-gray-100 rounded-lg border border-gray-200 opacity-60">
-                  <div className="text-2xl grayscale">🏆</div>
-                  <div>
-                    <p className="font-semibold text-gray-500">Nível Expert</p>
-                    <p className="text-sm text-gray-400">Alcance o nível 10</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* Ações Rápidas */}
             <div className="bg-white rounded-2xl shadow-2xl p-6">
               <h2 className="text-xl font-bold text-gray-800 mb-4">
@@ -455,7 +474,7 @@ export function Perfil() {
                   onClick={() => navigate("/recomendacoes")}
                   className="w-full px-4 py-3 text-left bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors cursor-pointer font-semibold"
                 >
-                  Trocar de Carreira
+                  {carreira ? 'Trocar de Carreira' : 'Escolher Carreira'}
                 </button>
                 <button
                   onClick={() => navigate("/ranking")}

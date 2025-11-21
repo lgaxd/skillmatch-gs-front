@@ -14,7 +14,6 @@ export interface Usuario {
 class AuthService {
   async login(credentials: LoginData): Promise<Usuario> {
     try {
-      // Adaptar para o formato esperado pelo backend Java
       const response = await apiService.login({
         email: credentials.email,
         senha: credentials.password
@@ -24,52 +23,39 @@ class AuthService {
       
       // Salvar dados do usuário
       localStorage.setItem('userData', JSON.stringify(response));
-      localStorage.setItem('userToken', 'mock-token');
+      localStorage.setItem('userToken', 'authenticated');
+      localStorage.setItem('userId', response.id.toString());
       
       return response;
     } catch (error) {
-      console.error('Erro no login, usando fallback:', error);
-      
-      // Fallback para desenvolvimento
-      const mockUser: Usuario = {
-        id: 1,
-        nome: 'Usuário Teste',
-        email: credentials.email
-      };
-      
-      localStorage.setItem('userData', JSON.stringify(mockUser));
-      localStorage.setItem('userToken', 'mock-token');
-      
-      return mockUser;
+      console.error('Erro no login:', error);
+      throw new Error('Email ou senha incorretos');
     }
   }
 
   async register(userData: any): Promise<Usuario> {
     try {
       const response = await apiService.register(userData);
-      return {
-        id: response.id || 1,
-        nome: response.nome || userData.nome,
-        email: response.email || userData.email
-      };
+      
+      // Fazer login automático após cadastro
+      const loginResponse = await this.login({
+        email: userData.email,
+        password: userData.senha
+      });
+      
+      return loginResponse;
     } catch (error) {
       console.error('Erro no registro:', error);
-      
-      // Fallback para desenvolvimento
-      const mockUser: Usuario = {
-        id: 1,
-        nome: userData.nome,
-        email: userData.email
-      };
-      
-      return mockUser;
+      throw error;
     }
   }
 
   logout(): void {
     localStorage.removeItem('userToken');
     localStorage.removeItem('userData');
+    localStorage.removeItem('userId');
     localStorage.removeItem('recomendacoesKNN');
+    localStorage.removeItem('perfilUsuario');
   }
 
   getCurrentUser(): Usuario | null {
@@ -78,8 +64,8 @@ class AuthService {
   }
 
   getCurrentUserId(): number {
-    const user = this.getCurrentUser();
-    return user?.id || 1;
+    const userId = localStorage.getItem('userId');
+    return userId ? parseInt(userId) : 0;
   }
 
   isAuthenticated(): boolean {

@@ -37,7 +37,7 @@ export interface CarreiraUsuario {
   progresso_percentual: number;
   xp_total: number;
   data_inicio: string;
-  status_jornada: 'Em Andamento' | 'Concluída' | 'Pausada';
+  status_jornada: 'Não Iniciada' | 'Em Andamento' | 'Concluída' | 'Pausada';
 }
 
 // Tipos para Skills

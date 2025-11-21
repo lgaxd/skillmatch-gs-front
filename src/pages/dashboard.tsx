@@ -9,6 +9,7 @@ import { EstatisticasCarreira } from "../components/features/dashboard/estatisti
 import { useDashboard } from "../hooks/use-dashboard";
 import { calcularNivel, calcularProgressoNivel } from "../utils/calculations";
 import { ProgressBar } from "../components/ui/layout/progress-bar";
+import type { CarreiraUsuario } from '../types/api';
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -27,24 +28,58 @@ export function Dashboard() {
   }
 
   // Error state
-  if (error || !dashboardData) {
+  if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <BackgroundPrincipal />
-        <div className="relative z-10 bg-white rounded-2xl p-8 shadow-2xl">
+        <div className="relative z-10 bg-white rounded-2xl p-8 shadow-2xl max-w-md">
           <div className="text-center">
             <div className="text-6xl mb-4">😕</div>
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              Ops! Algo deu errado
+              Erro ao Carregar
+            </h2>
+            <p className="text-gray-600 mb-4">
+              {error}
+            </p>
+            <div className="space-y-3">
+              <button
+                onClick={() => window.location.reload()}
+                className="w-full px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors cursor-pointer"
+              >
+                Tentar Novamente
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="w-full px-6 py-3 text-gray-700 bg-gray-100 border border-gray-300 rounded-xl hover:bg-gray-200 transition-colors cursor-pointer"
+              >
+                Voltar ao Início
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Se não há dados mesmo após loading
+  if (!dashboardData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <BackgroundPrincipal />
+        <div className="relative z-10 bg-white rounded-2xl p-8 shadow-2xl max-w-md">
+          <div className="text-center">
+            <div className="text-6xl mb-4">📊</div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Nenhum Dado Encontrado
             </h2>
             <p className="text-gray-600 mb-6">
-              {error || "Não foi possível carregar o dashboard"}
+              Você ainda não selecionou uma carreira.
             </p>
             <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors cursor-pointer"
+              onClick={() => navigate('/recomendacoes')}
+              className="w-full px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors cursor-pointer"
             >
-              Tentar Novamente
+              Selecionar uma Carreira
             </button>
           </div>
         </div>
@@ -52,7 +87,36 @@ export function Dashboard() {
     );
   }
 
-  const { usuario, carreira, progressoCursos, ranking } = dashboardData;
+  // Dados padrão para evitar undefined
+  const defaultCarreira: CarreiraUsuario = {
+    id_carreira: 0,
+    nome_carreira: 'Nenhuma carreira selecionada',
+    area_atuacao: 'Selecione uma carreira',
+    progresso_percentual: 0,
+    xp_total: 0,
+    data_inicio: '',
+    status_jornada: 'Não Iniciada'
+  };
+
+  const { 
+    usuario = { 
+      id_usuario: 0, 
+      nome_usuario: 'Usuário', 
+      email_usuario: '' 
+    },
+    carreira = defaultCarreira,
+    progressoCursos = {
+      cursos_concluidos: 0,
+      cursos_andamento: 0,
+      cursos_pendentes: 0,
+      total_cursos: 0
+    },
+    ranking = {
+      posicao: 0,
+      pontuacao_total: 0,
+      mes_referencia: '2024-01'
+    }
+  } = dashboardData;
 
   return (
     <div className="relative min-h-screen py-8 px-4 sm:px-6 lg:px-8">
@@ -75,7 +139,13 @@ export function Dashboard() {
             <ProgressoJornada 
               carreira={carreira}
               progressoCursos={progressoCursos}
-              onContinuarJornada={() => navigate(`/trilha/${carreira.id_carreira}`)}
+              onContinuarJornada={() => {
+                if (carreira.id_carreira && carreira.id_carreira > 0) {
+                  navigate(`/trilha/${carreira.id_carreira}`);
+                } else {
+                  navigate('/recomendacoes');
+                }
+              }}
             />
             
             <AtividadesRecentes />
@@ -99,10 +169,10 @@ export function Dashboard() {
   );
 }
 
-// Subcomponente Header do Dashboard
+// Subcomponente Header do Dashboard com verificações de segurança
 interface DashboardHeaderProps {
   usuario: any;
-  carreira: any;
+  carreira: CarreiraUsuario;
   onVerPerfil: () => void;
   onTrocarCarreira: () => void;
 }
@@ -113,17 +183,23 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   onVerPerfil, 
   onTrocarCarreira 
 }) => {
-  const nivelAtual = calcularNivel(carreira.xp_total);
-  const { progresso } = calcularProgressoNivel(carreira.xp_total, nivelAtual);
+  // Verificações de segurança
+  const nomeUsuario = usuario?.nome_usuario || 'Usuário';
+  const nomeCarreira = carreira?.nome_carreira || 'Nenhuma carreira selecionada';
+  const areaCarreira = carreira?.area_atuacao || 'Selecione uma carreira';
+  const xpTotal = carreira?.xp_total || 0;
+  
+  const nivelAtual = calcularNivel(xpTotal);
+  const { progresso } = calcularProgressoNivel(xpTotal, nivelAtual);
 
   return (
     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
       <div className="flex-1">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">
-          Bem-vindo de volta, {usuario.nome_usuario}! 👋
+          Bem-vindo de volta, {nomeUsuario}! 👋
         </h1>
         <p className="text-gray-600 mb-4">
-          Continue sua jornada em <strong>{carreira.nome_carreira}</strong> - {carreira.area_atuacao}
+          Continue sua jornada em <strong>{nomeCarreira}</strong> - {areaCarreira}
         </p>
         <div className="flex items-center gap-6">
           <div className="text-center">
@@ -131,7 +207,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
             <div className="text-sm text-gray-500">Seu nível</div>
           </div>
           <div className="flex-1">
-            <ProgressBar value={progresso} label={`${carreira.xp_total} XP`} />
+            <ProgressBar value={progresso} label={`${xpTotal} XP`} />
           </div>
         </div>
       </div>

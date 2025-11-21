@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { BackgroundPrincipal } from "../components/background-principal";
 import BotaoPersonalizado from "../components/ui/buttons/botao-personalizado";
 import { Loading } from "../components/ui/feedback/loading";
+import { authService } from "../services/auth";
+import { apiService } from "../services/api";
 
 interface UsuarioRanking {
   id_usuario: number;
@@ -134,32 +136,47 @@ export function Ranking() {
   ];
 
   useEffect(() => {
-    const carregarRanking = async () => {
-      setIsLoading(true);
-      try {
-        
-        // Aqui viriam as chamadas reais para a API baseadas no seu schema:
-        // - TB_RANKING (posições do mês)
-        // - TB_USUARIO (nomes dos usuários)
-        // - TB_USUARIO_CARREIRA + TB_CARREIRA (carreira atual de cada usuário)
-        // - TB_AREAS_ATUACAO (área de atuação)
-        
-        setRankingGeral(rankingMock);
-        setMeuRanking(meuRankingMock);
-        
-      } catch (error) {
-        console.error("Erro ao carregar ranking:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const carregarRanking = async () => {
+    setIsLoading(true);
+    try {
+      // Buscar ranking geral
+      const rankingGeralAPI = await apiService.getRanking(mesSelecionado);
+      
+      // Converter para o formato do componente
+      const rankingFormatado = rankingGeralAPI.map((item: any) => ({
+        id_usuario: item.usuario.id,
+        nome_usuario: item.usuario.nome,
+        posicao: item.posicao,
+        pontuacao_total: item.pontuacao,
+        carreira: "Carreira", // Você precisará buscar a carreira de cada usuário
+        area_atuacao: "Tecnologia",
+        mes_referencia: item.mesReferencia
+      }));
 
-    carregarRanking();
-  }, [mesSelecionado]);
-
-  const handleVoltar = () => {
-    navigate("/dashboard");
+      setRankingGeral(rankingFormatado);
+      
+      // Buscar ranking do usuário atual
+      const userId = authService.getCurrentUserId();
+      const meuRankingAPI = await apiService.getRankingUsuario(userId);
+      
+      setMeuRanking({
+        posicao: meuRankingAPI.posicao,
+        pontuacao_total: meuRankingAPI.pontuacao,
+        mes_referencia: meuRankingAPI.mesReferencia
+      });
+      
+    } catch (error) {
+      console.error("Erro ao carregar ranking:", error);
+      // Usar dados mockados em caso de erro
+      setRankingGeral(rankingMock);
+      setMeuRanking(meuRankingMock);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  carregarRanking();
+}, [mesSelecionado]);
 
   const getMedalha = (posicao: number) => {
     switch (posicao) {
@@ -177,15 +194,6 @@ export function Ranking() {
       case 3: return "bg-gradient-to-r from-orange-100 to-orange-200 border-orange-300";
       case 4: case 5: return "bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200";
       default: return "bg-white border-gray-200";
-    }
-  };
-
-  const getCorTextoPosicao = (posicao: number) => {
-    switch (posicao) {
-      case 1: return "text-yellow-600";
-      case 2: return "text-gray-600";
-      case 3: return "text-orange-600";
-      default: return "text-gray-700";
     }
   };
 
@@ -480,7 +488,7 @@ export function Ranking() {
             {/* Botão Voltar */}
             <BotaoPersonalizado
               texto="Voltar ao Dashboard"
-              onClick={handleVoltar}
+              onClick={() => navigate("/dashboard")}
               className="w-full"
             />
           </div>

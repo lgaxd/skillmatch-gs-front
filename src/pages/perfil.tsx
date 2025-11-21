@@ -56,23 +56,19 @@ export function Perfil() {
     setIsLoading(true);
     try {
       const userId = authService.getCurrentUserId();
-      
+
       if (!userId) {
         throw new Error('Usuário não autenticado');
       }
 
-      console.log('🔄 Carregando perfil para usuário:', userId);
-
       // Carregar dados do usuário
       const usuarioData = await apiService.getUser(userId);
-      console.log('📊 Dados do usuário:', usuarioData);
       setUsuario(usuarioData);
       setFormData(usuarioData);
 
-      // Carregar dashboard para obter dados consolidados
+      // Carregar dashboard
       try {
         const dashboard = await apiService.getDashboard(userId);
-        console.log('📈 Dados do dashboard:', dashboard);
         setDashboardData(dashboard);
       } catch (error) {
         console.log('⚠️ Erro ao carregar dashboard:', error);
@@ -81,7 +77,6 @@ export function Perfil() {
       // Carregar carreira atual
       try {
         const carreiraData = await apiService.getCarreiraAtual(userId);
-        console.log('🎯 Dados da carreira:', carreiraData);
         setCarreira(carreiraData);
       } catch (error) {
         console.log('⚠️ Usuário sem carreira selecionada:', error);
@@ -91,19 +86,15 @@ export function Perfil() {
       // Carregar estatísticas
       try {
         const statsData = await apiService.getEstatisticas(userId);
-        console.log('📊 Estatísticas:', statsData);
 
-        const cursosConcluidos = statsData.totalCursosConcluidos || 0;
-        const cursosAndamento = (statsData.totalCursosIniciados || 0) - cursosConcluidos;
-        
         setEstatisticas({
-          cursos_concluidos: cursosConcluidos,
-          cursos_andamento: Math.max(0, cursosAndamento),
+          cursos_concluidos: statsData.totalCursosConcluidos || 0,
+          cursos_andamento: (statsData.totalCursosIniciados || 0) - (statsData.totalCursosConcluidos || 0),
           total_cursos: 10,
-          skills_completas: Math.floor(cursosConcluidos / 2),
+          skills_completas: Math.floor((statsData.totalCursosConcluidos || 0) / 2),
           total_skills: 12,
-          tempo_total_estudo: cursosConcluidos * 15,
-          dias_consecutivos: statsData.diasConsecutivos || 0
+          tempo_total_estudo: (statsData.totalCursosConcluidos || 0) * 15,
+          dias_consecutivos: 0
         });
       } catch (error) {
         console.log('⚠️ Erro ao carregar estatísticas:', error);
@@ -120,26 +111,14 @@ export function Perfil() {
 
     } catch (error) {
       console.error("❌ Erro ao carregar perfil:", error);
-      
-      // Dados de fallback mínimos baseados no que a API realmente retorna
-      const usuarioFallback: User = {
+      // Fallback
+      const usuarioFallback = {
         id: 1,
         nome: "Usuário",
         dataNascimento: "1990-01-01"
       };
-
       setUsuario(usuarioFallback);
       setFormData(usuarioFallback);
-      setCarreira(null);
-      setEstatisticas({
-        cursos_concluidos: 0,
-        cursos_andamento: 0,
-        total_cursos: 10,
-        skills_completas: 0,
-        total_skills: 12,
-        tempo_total_estudo: 0,
-        dias_consecutivos: 0
-      });
     } finally {
       setIsLoading(false);
     }
@@ -157,7 +136,7 @@ export function Perfil() {
     setIsLoading(true);
     try {
       const userId = authService.getCurrentUserId();
-      
+
       // Preparar dados para envio no formato exato que a API espera
       const dadosParaEnvio = {
         nome: formData.nome,
@@ -166,11 +145,11 @@ export function Perfil() {
       };
 
       await apiService.updateUser(userId, dadosParaEnvio);
-      
+
       // Recarregar os dados atualizados
       await carregarPerfil();
       setIsEditing(false);
-      
+
       alert("Perfil atualizado com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar perfil:", error);
@@ -231,7 +210,7 @@ export function Perfil() {
   return (
     <div className="relative min-h-screen py-8 px-4 sm:px-6 lg:px-8">
       <BackgroundPrincipal />
-      
+
       <div className="relative z-10 max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -280,7 +259,7 @@ export function Perfil() {
                     />
                     {/* Removidos campos que a API não suporta: email, telefone, gênero */}
                   </div>
-                  
+
                   <div className="flex gap-3 pt-4">
                     <button
                       onClick={handleSave}
@@ -336,7 +315,7 @@ export function Perfil() {
               <h2 className="text-xl font-bold text-gray-800 mb-6">
                 Carreira Atual
               </h2>
-              
+
               {carreira ? (
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
@@ -357,14 +336,14 @@ export function Perfil() {
                     <span className="text-gray-600">XP Total:</span>
                     <span className="font-semibold text-gray-800">{carreira.xp} XP</span>
                   </div>
-                  
+
                   <div className="pt-4">
                     <div className="flex justify-between text-sm text-gray-600 mb-2">
                       <span>Progresso da Jornada</span>
                       <span>{carreira.progresso?.toFixed(1)}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div 
+                      <div
                         className="bg-green-500 h-3 rounded-full transition-all duration-500"
                         style={{ width: `${carreira.progresso || 0}%` }}
                       />
@@ -385,14 +364,14 @@ export function Perfil() {
                     <span className="text-gray-600">XP Total:</span>
                     <span className="font-semibold text-gray-800">{dashboardData.xpTotal} XP</span>
                   </div>
-                  
+
                   <div className="pt-4">
                     <div className="flex justify-between text-sm text-gray-600 mb-2">
                       <span>Progresso da Jornada</span>
                       <span>{dashboardData.progressoCarreira?.toFixed(1)}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div 
+                      <div
                         className="bg-green-500 h-3 rounded-full transition-all duration-500"
                         style={{ width: `${dashboardData.progressoCarreira || 0}%` }}
                       />
@@ -421,7 +400,7 @@ export function Perfil() {
               <h2 className="text-xl font-bold text-gray-800 mb-6">
                 Estatísticas de Aprendizado
               </h2>
-              
+
               <div className="space-y-4">
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
                   <div className="text-2xl font-bold text-blue-600">{nivelAtual}</div>
@@ -462,7 +441,7 @@ export function Perfil() {
               <h2 className="text-xl font-bold text-gray-800 mb-4">
                 Ações Rápidas
               </h2>
-              
+
               <div className="space-y-3">
                 <button
                   onClick={() => navigate("/dashboard")}

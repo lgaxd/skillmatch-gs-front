@@ -9,11 +9,11 @@ import { EstatisticasCarreira } from "../components/features/dashboard/estatisti
 import { useDashboard } from "../hooks/use-dashboard";
 import { calcularNivel, calcularProgressoNivel } from "../utils/calculations";
 import { ProgressBar } from "../components/ui/layout/progress-bar";
-import type { CarreiraUsuario } from '../types/api';
+import type { CarreiraUsuario, DashboardData } from '../types/api';
 
 export function Dashboard() {
   const navigate = useNavigate();
-  const { dashboardData, isLoading, error } = useDashboard();
+  const { dashboardCompleto, isLoading, error } = useDashboard();
 
   // Loading state
   if (isLoading) {
@@ -28,7 +28,7 @@ export function Dashboard() {
   }
 
   // Error state
-  if (error) {
+  if (error || !dashboardCompleto) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <BackgroundPrincipal />
@@ -39,7 +39,7 @@ export function Dashboard() {
               Erro ao Carregar
             </h2>
             <p className="text-gray-600 mb-4">
-              {error}
+              {error || "Não foi possível carregar os dados do dashboard"}
             </p>
             <div className="space-y-3">
               <button
@@ -61,72 +61,36 @@ export function Dashboard() {
     );
   }
 
-  // Se não há dados mesmo após loading
-  if (!dashboardData) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <BackgroundPrincipal />
-        <div className="relative z-10 bg-white rounded-2xl p-8 shadow-2xl max-w-md">
-          <div className="text-center">
-            <div className="text-6xl mb-4">📊</div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              Nenhum Dado Encontrado
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Você ainda não selecionou uma carreira.
-            </p>
-            <button
-              onClick={() => navigate('/recomendacoes')}
-              className="w-full px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors cursor-pointer"
-            >
-              Selecionar uma Carreira
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Dados padrão baseados na estrutura real da API
   const { 
-    nomeUsuario,
-    carreiraAtual,
-    progressoCarreira,
-    xpTotal,
-    cursosConcluidos
-  } = dashboardData;
+    usuario,
+    carreiraUsuario,
+    dashboardData,
+    estatisticas,
+    ranking
+  } = dashboardCompleto;
 
-  // Criar estrutura compatível com os componentes
-  const carreiraCompativel: CarreiraUsuario = {
-    id: 1,
-    usuario: {
-      id: 1,
-      nome: nomeUsuario,
-      dataNascimento: ""
-    },
-    carreira: {
-      id: 1,
-      nome: carreiraAtual,
-      descricao: carreiraAtual
-    },
-    idStatusJornada: 2, // Em Andamento
-    progresso: progressoCarreira,
-    xp: xpTotal,
-    data_inicio: new Date().toISOString().split('T')[0]
-  };
+  // Preparar dados para os componentes
+  const carreiraCompativel = carreiraUsuario ? {
+    id: carreiraUsuario.id,
+    usuario: carreiraUsuario.usuario,
+    carreira: carreiraUsuario.carreira,
+    idStatusJornada: carreiraUsuario.idStatusJornada,
+    progresso: carreiraUsuario.progresso,
+    xp: carreiraUsuario.xp,
+  } : null;
 
   const progressoCursosCompativel = {
-    cursos_concluidos: cursosConcluidos,
-    cursos_andamento: Math.max(0, 3 - cursosConcluidos), // Estimativa
-    cursos_pendentes: Math.max(0, 10 - cursosConcluidos), // Estimativa
+    cursos_concluidos: estatisticas.totalCursosConcluidos,
+    cursos_andamento: Math.max(0, estatisticas.totalCursosIniciados - estatisticas.totalCursosConcluidos),
+    cursos_pendentes: Math.max(0, 10 - estatisticas.totalCursosIniciados), // Estimativa
     total_cursos: 10
   };
 
-  const rankingCompativel = {
-    posicao: 7, // Valor padrão
-    pontuacao_total: xpTotal,
-    mes_referencia: new Date().toISOString().slice(0, 7) // YYYY-MM
-  };
+  const rankingCompativel = ranking ? {
+    posicao: ranking.posicao,
+    pontuacao_total: ranking.pontuacao,
+    mes_referencia: ranking.mesReferencia
+  } : null;
 
   return (
     <div className="relative min-h-screen py-8 px-4 sm:px-6 lg:px-8">
@@ -136,44 +100,77 @@ export function Dashboard() {
         {/* Header do Dashboard */}
         <Card className="mb-8" padding="lg">
           <DashboardHeader 
-            usuario={{ nome: nomeUsuario }}
+            usuario={usuario}
             carreira={carreiraCompativel}
+            dashboardData={dashboardData}
             onVerPerfil={() => navigate('/perfil')}
             onTrocarCarreira={() => navigate('/recomendacoes')}
           />
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Coluna 1: Progresso e Ações Rápidas */}
-          <div className="lg:col-span-2 space-y-8">
-            <ProgressoJornada 
-              carreira={carreiraCompativel}
-              progressoCursos={progressoCursosCompativel}
-              onContinuarJornada={() => {
-                if (carreiraCompativel.id && carreiraCompativel.id > 0) {
-                  navigate(`/trilha/${carreiraCompativel.id}`);
-                } else {
-                  navigate('/recomendacoes');
-                }
-              }}
-            />
-            
-            <AtividadesRecentes />
-          </div>
+        {carreiraCompativel ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Coluna 1: Progresso e Ações Rápidas */}
+            <div className="lg:col-span-2 space-y-8">
+              <ProgressoJornada 
+                carreira={carreiraCompativel}
+                progressoCursos={progressoCursosCompativel}
+                onContinuarJornada={() => {
+                  if (carreiraCompativel.id) {
+                    navigate(`/trilha/${carreiraCompativel.id}`);
+                  } else {
+                    navigate('/recomendacoes');
+                  }
+                }}
+              />
+              
+              <AtividadesRecentes />
+            </div>
 
-          {/* Coluna 2: Ranking e Estatísticas */}
-          <div className="space-y-8">
-            <RankingCard 
-              ranking={rankingCompativel}
-              onVerRanking={() => navigate('/ranking')}
-            />
-            
-            <EstatisticasCarreira 
-              carreira={carreiraCompativel}
-              progressoCursos={progressoCursosCompativel}
-            />
+            {/* Coluna 2: Ranking e Estatísticas */}
+            <div className="space-y-8">
+              {rankingCompativel && (
+                <RankingCard 
+                  ranking={rankingCompativel}
+                  onVerRanking={() => navigate('/ranking')}
+                />
+              )}
+              
+              <EstatisticasCarreira 
+                carreira={carreiraCompativel}
+                progressoCursos={progressoCursosCompativel}
+              />
+            </div>
           </div>
-        </div>
+        ) : (
+          // Estado quando o usuário não tem carreira selecionada
+          <div className="text-center py-12">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl mx-auto">
+              <div className="text-6xl mb-4">🎯</div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                Bem-vindo ao SkillMatch, {usuario.nome}!
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Você ainda não selecionou uma carreira. Comece sua jornada de requalificação 
+                profissional descobrindo as carreiras mais alinhadas com seu perfil.
+              </p>
+              <div className="space-y-4">
+                <button
+                  onClick={() => navigate('/formulario-perfil')}
+                  className="w-full px-8 py-4 text-lg font-semibold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors cursor-pointer"
+                >
+                  Descobrir Minhas Carreiras
+                </button>
+                <button
+                  onClick={() => navigate('/recomendacoes')}
+                  className="w-full px-8 py-4 text-lg font-semibold text-gray-700 bg-gray-100 border border-gray-300 rounded-xl hover:bg-gray-200 transition-colors cursor-pointer"
+                >
+                  Ver Carreiras Disponíveis
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -181,8 +178,9 @@ export function Dashboard() {
 
 // Subcomponente Header do Dashboard
 interface DashboardHeaderProps {
-  usuario: { nome: string };
-  carreira: CarreiraUsuario;
+  usuario: { id: number; nome: string; dataNascimento: string };
+  carreira: CarreiraUsuario | null;
+  dashboardData: DashboardData;
   onVerPerfil: () => void;
   onTrocarCarreira: () => void;
 }
@@ -190,12 +188,13 @@ interface DashboardHeaderProps {
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({ 
   usuario, 
   carreira, 
+  dashboardData,
   onVerPerfil, 
   onTrocarCarreira 
 }) => {
   const nomeUsuario = usuario?.nome || 'Usuário';
-  const nomeCarreira = carreira?.carreira?.nome || 'Nenhuma carreira selecionada';
-  const xpTotal = carreira?.xp || 0;
+  const nomeCarreira = carreira?.carreira.nome || dashboardData.carreiraAtual || 'Nenhuma carreira selecionada';
+  const xpTotal = carreira?.xp || dashboardData.xpTotal || 0;
   
   const nivelAtual = calcularNivel(xpTotal);
   const { progresso } = calcularProgressoNivel(xpTotal, nivelAtual);
@@ -207,18 +206,26 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           Bem-vindo de volta, {nomeUsuario}! 👋
         </h1>
         <p className="text-gray-600 mb-4">
-          Continue sua jornada em <strong>{nomeCarreira}</strong>
+          {carreira ? (
+            <>Continue sua jornada em <strong>{nomeCarreira}</strong></>
+          ) : (
+            <>Comece sua jornada de requalificação profissional</>
+          )}
         </p>
-        <div className="flex items-center gap-6">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-indigo-600">Nível {nivelAtual}</div>
-            <div className="text-sm text-gray-500">Seu nível</div>
+        
+        {carreira && (
+          <div className="flex items-center gap-6">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-indigo-600">Nível {nivelAtual}</div>
+              <div className="text-sm text-gray-500">Seu nível</div>
+            </div>
+            <div className="flex-1">
+              <ProgressBar value={progresso} label={`${xpTotal} XP`} />
+            </div>
           </div>
-          <div className="flex-1">
-            <ProgressBar value={progresso} label={`${xpTotal} XP`} />
-          </div>
-        </div>
+        )}
       </div>
+      
       <div className="flex flex-col sm:flex-row gap-3">
         <button
           onClick={onVerPerfil}
@@ -226,12 +233,22 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         >
           Meu Perfil
         </button>
-        <button
-          onClick={onTrocarCarreira}
-          className="px-4 py-2 text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors cursor-pointer"
-        >
-          Trocar Carreira
-        </button>
+        
+        {carreira ? (
+          <button
+            onClick={onTrocarCarreira}
+            className="px-4 py-2 text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors cursor-pointer"
+          >
+            Trocar Carreira
+          </button>
+        ) : (
+          <button
+            onClick={onTrocarCarreira}
+            className="px-4 py-2 text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors cursor-pointer"
+          >
+            Escolher Carreira
+          </button>
+        )}
       </div>
     </div>
   );

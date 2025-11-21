@@ -5,8 +5,21 @@ import BotaoPersonalizado from "../components/ui/buttons/botao-personalizado";
 import { Loading } from "../components/ui/feedback/loading";
 import { apiService } from "../services/api";
 import { authService } from "../services/auth";
+import type { CarreiraSkill, Curso, UsuarioCurso, CarreiraUsuario } from '../types/api';
 
-// Interface corrigida
+interface SkillCompleta {
+  id_skill: number;
+  nome_skill: string;
+  descricao_skill: string;
+  nivel_dificuldade: 'Iniciante' | 'Intermediário' | 'Avançado';
+  tempo_estimado_horas: number;
+  xp_skill: number;
+  ordem_trilha: number;
+  concluida: boolean;
+  progresso_percentual: number;
+  cursos: CursoTrilha[];
+}
+
 interface CursoTrilha {
   id_curso: number;
   nome_curso: string;
@@ -18,20 +31,7 @@ interface CursoTrilha {
   progresso_percentual: number;
 }
 
-interface Skill {
-  id_skill: number;
-  nome_skill: string;
-  descricao_skill: string;
-  nivel_dificuldade: 'Iniciante' | 'Intermediário' | 'Avançado';
-  tempo_estimado_horas: number;
-  xp_skill: number;
-  ordem_trilha: number;
-  concluida: boolean;
-  progresso_percentual: number;
-  cursos: CursoTrilha[]; // Use a interface corrigida aqui
-}
-
-interface Carreira {
+interface CarreiraTrilha {
   id_carreira: number;
   nome_carreira: string;
   area_atuacao: string;
@@ -41,34 +41,14 @@ interface Carreira {
   skills_concluidas: number;
 }
 
-interface CursoUsuario {
-  id?: number;
-  id_usuario_curso?: number;
-  usuario?: any;
-  curso?: {
-    id?: number;
-    id_curso?: number;
-    nome?: string;
-    nome_curso?: string;
-    link?: string;
-    link_curso?: string;
-    skill?: any;
-  };
-  status_curso?: 'Pendente' | 'Em andamento' | 'Concluído';
-  status?: 'Pendente' | 'Em andamento' | 'Concluído';
-  progresso_percentual?: number;
-  progresso?: number;
-}
-
 export function Trilha() {
   const navigate = useNavigate();
   const { idCarreira } = useParams<{ idCarreira: string }>();
   const [isLoading, setIsLoading] = useState(true);
-  const [carreira, setCarreira] = useState<Carreira | null>(null);
-  const [skills, setSkills] = useState<Skill[]>([]);
+  const [carreira, setCarreira] = useState<CarreiraTrilha | null>(null);
+  const [skills, setSkills] = useState<SkillCompleta[]>([]);
   const [skillExpandida, setSkillExpandida] = useState<number | null>(null);
 
-  // Carregar dados da trilha
   useEffect(() => {
     const carregarTrilha = async () => {
       setIsLoading(true);
@@ -78,78 +58,56 @@ export function Trilha() {
         }
 
         const carreiraId = parseInt(idCarreira);
-
-        // Buscar carreira atual do usuário
         const userId = authService.getCurrentUserId();
-        const carreiraAtual = await apiService.getCarreiraAtual(userId);
 
+        // Buscar carreira atual
+        const carreiraAtual: CarreiraUsuario = await apiService.getCarreiraAtual(userId);
+        
         // Buscar skills da carreira
-        const skillsBackend = await apiService.getSkillsCarreira(carreiraId);
+        const skillsBackend: CarreiraSkill[] = await apiService.getSkillsCarreira(carreiraId);
+        
+        // Buscar cursos do usuário
+        const cursosUsuario: UsuarioCurso[] = await apiService.getCursosUsuario(userId);
 
-        // Para cada skill, buscar os cursos
+        // Processar skills com cursos
         const skillsComCursos = await Promise.all(
-          skillsBackend.map(async (skill: any) => {
-            try {
-              const cursos = await apiService.getCursosSkill(skill.id || skill.id_skill);
-              const cursosUsuario = await apiService.getCursosUsuario(userId);
-
-              // Mapear status dos cursos do usuário
-              const cursosComStatus: CursoTrilha[] = cursos.map((curso: any) => {
-                const cursoUsuario: CursoUsuario | undefined = cursosUsuario.find((uc: any) => {
-                  // Verifica de várias formas possíveis o ID do curso
-                  const cursoId = curso.id || curso.id_curso;
-                  const usuarioCursoId = uc.curso?.id || uc.curso?.id_curso || uc.id_curso;
-                  return usuarioCursoId === cursoId;
-                });
-
-                // CORREÇÃO: Agora TypeScript sabe que cursoUsuario pode ter essas propriedades
-                const status = cursoUsuario?.status_curso || cursoUsuario?.status || 'Pendente';
-                const progresso = cursoUsuario?.progresso_percentual || cursoUsuario?.progresso || 0;
-
-                return {
-                  id_curso: curso.id || curso.id_curso,
-                  nome_curso: curso.nome || curso.nome_curso || `Curso ${curso.id}`,
-                  link_curso: curso.link || curso.link_curso || '#',
-                  plataforma: curso.plataforma || "Plataforma Online",
-                  duracao_estimada_horas: curso.duracao_estimada_horas || 10,
-                  dificuldade: skill.nivel || skill.nivel_dificuldade || 'Intermediário',
-                  status_curso: status,
-                  progresso_percentual: progresso
-                };
-              });
-
-              // CORREÇÃO: Use a interface correta aqui
-              const cursosConcluidos = cursosComStatus.filter((c: CursoTrilha) => c.status_curso === 'Concluído').length;
-              const progressoSkill = cursosComStatus.length > 0 ? (cursosConcluidos / cursosComStatus.length) * 100 : 0;
-
+          skillsBackend.map(async (carreiraSkill) => {
+            const skill = carreiraSkill.skill;
+            
+            // Buscar cursos da skill
+            const cursosSkill: Curso[] = await apiService.getCursosSkill(skill.id);
+            
+            // Mapear cursos com status do usuário
+            const cursosComStatus: CursoTrilha[] = cursosSkill.map((curso) => {
+              const cursoUsuario = cursosUsuario.find(uc => uc.curso.id === curso.id);
+              
               return {
-                id_skill: skill.id || skill.id_skill,
-                nome_skill: skill.nome || skill.nome_skill,
-                descricao_skill: skill.descricao || `Skill ${skill.nome}`,
-                nivel_dificuldade: (skill.nivel || skill.nivel_dificuldade || 'Intermediário') as 'Iniciante' | 'Intermediário' | 'Avançado',
-                tempo_estimado_horas: 40, // Default
-                xp_skill: 100, // Default
-                ordem_trilha: skill.ordem || 1,
-                concluida: progressoSkill === 100,
-                progresso_percentual: progressoSkill,
-                cursos: cursosComStatus
+                id_curso: curso.id,
+                nome_curso: curso.nome,
+                link_curso: curso.link,
+                plataforma: "Plataforma Online",
+                duracao_estimada_horas: 10,
+                dificuldade: skill.nivel,
+                status_curso: cursoUsuario?.status || 'Pendente',
+                progresso_percentual: cursoUsuario?.progresso || 0
               };
-            } catch (error) {
-              console.error(`Erro ao carregar cursos da skill ${skill.id}:`, error);
-              return {
-                ...skill,
-                id_skill: skill.id || skill.id_skill,
-                nome_skill: skill.nome || skill.nome_skill,
-                descricao_skill: skill.descricao || `Skill ${skill.nome}`,
-                nivel_dificuldade: (skill.nivel || skill.nivel_dificuldade || 'Intermediário') as 'Iniciante' | 'Intermediário' | 'Avançado',
-                tempo_estimado_horas: 40,
-                xp_skill: 100,
-                ordem_trilha: skill.ordem || 1,
-                concluida: false,
-                progresso_percentual: 0,
-                cursos: []
-              };
-            }
+            });
+
+            const cursosConcluidos = cursosComStatus.filter(c => c.status_curso === 'Concluído').length;
+            const progressoSkill = cursosComStatus.length > 0 ? (cursosConcluidos / cursosComStatus.length) * 100 : 0;
+
+            return {
+              id_skill: skill.id,
+              nome_skill: skill.nome,
+              descricao_skill: `Skill ${skill.nome} - ${skill.nivel}`,
+              nivel_dificuldade: skill.nivel as 'Iniciante' | 'Intermediário' | 'Avançado',
+              tempo_estimado_horas: 40,
+              xp_skill: 100,
+              ordem_trilha: carreiraSkill.ordem,
+              concluida: progressoSkill === 100,
+              progresso_percentual: progressoSkill,
+              cursos: cursosComStatus
+            };
           })
         );
 
@@ -159,10 +117,10 @@ export function Trilha() {
 
         setCarreira({
           id_carreira: carreiraId,
-          nome_carreira: carreiraAtual?.carreira.nome || "Carreira",
-          area_atuacao: carreiraAtual?.carreira.descricao || "Tecnologia",
+          nome_carreira: carreiraAtual.carreira.nome,
+          area_atuacao: carreiraAtual.carreira.descricao,
           progresso_geral: progressoGeral,
-          xp_total: carreiraAtual?.xp || 0,
+          xp_total: carreiraAtual.xp,
           total_skills: skillsComCursos.length,
           skills_concluidas: skillsConcluidas
         });
@@ -171,9 +129,17 @@ export function Trilha() {
 
       } catch (error) {
         console.error("Erro ao carregar trilha:", error);
-        // Fallback para dados mockados em caso de erro
-        setCarreira(carreiraMock);
-        setSkills(skillsMock);
+        // Usar fallback em caso de erro
+        setCarreira({
+          id_carreira: 1,
+          nome_carreira: "Carreira Fallback",
+          area_atuacao: "Tecnologia",
+          progresso_geral: 0,
+          xp_total: 0,
+          total_skills: 0,
+          skills_concluidas: 0,
+        });
+        setSkills([]);
       } finally {
         setIsLoading(false);
       }
@@ -619,129 +585,3 @@ export function Trilha() {
     </div>
   );
 }
-
-// Dados mockados para fallback
-const carreiraMock: Carreira = {
-  id_carreira: 1,
-  nome_carreira: "Desenvolvedor Front-end",
-  area_atuacao: "Programação",
-  progresso_geral: 25.50,
-  xp_total: 1250,
-  total_skills: 12,
-  skills_concluidas: 3
-};
-
-const skillsMock: Skill[] = [
-  {
-    id_skill: 1,
-    nome_skill: "HTML/CSS Fundamentos",
-    descricao_skill: "Fundamentos de estruturação e estilização web",
-    nivel_dificuldade: 'Iniciante',
-    tempo_estimado_horas: 40,
-    xp_skill: 100,
-    ordem_trilha: 1,
-    concluida: true,
-    progresso_percentual: 100,
-    cursos: [
-      {
-        id_curso: 1,
-        nome_curso: "HTML5 e CSS3 Fundamentos",
-        link_curso: "https://www.exemplo.com/html-css",
-        plataforma: "Alura",
-        duracao_estimada_horas: 15,
-        dificuldade: "Iniciante",
-        status_curso: 'Concluído',
-        progresso_percentual: 100
-      },
-      {
-        id_curso: 2,
-        nome_curso: "CSS Grid e Flexbox",
-        link_curso: "https://www.exemplo.com/css-grid",
-        plataforma: "Udemy",
-        duracao_estimada_horas: 12,
-        dificuldade: "Iniciante",
-        status_curso: 'Concluído',
-        progresso_percentual: 100
-      }
-    ]
-  },
-  {
-    id_skill: 2,
-    nome_skill: "JavaScript Moderno",
-    descricao_skill: "Programação para interatividade web",
-    nivel_dificuldade: 'Intermediário',
-    tempo_estimado_horas: 80,
-    xp_skill: 150,
-    ordem_trilha: 2,
-    concluida: false,
-    progresso_percentual: 65,
-    cursos: [
-      {
-        id_curso: 3,
-        nome_curso: "JavaScript Moderno ES6+",
-        link_curso: "https://www.exemplo.com/js-es6",
-        plataforma: "Alura",
-        duracao_estimada_horas: 20,
-        dificuldade: "Intermediário",
-        status_curso: 'Em andamento',
-        progresso_percentual: 65
-      },
-      {
-        id_curso: 4,
-        nome_curso: "JavaScript para Iniciantes",
-        link_curso: "https://www.exemplo.com/js-iniciante",
-        plataforma: "Coursera",
-        duracao_estimada_horas: 25,
-        dificuldade: "Iniciante",
-        status_curso: 'Pendente',
-        progresso_percentual: 0
-      }
-    ]
-  },
-  {
-    id_skill: 3,
-    nome_skill: "React Framework",
-    descricao_skill: "Biblioteca para interfaces de usuário modernas",
-    nivel_dificuldade: 'Intermediário',
-    tempo_estimado_horas: 60,
-    xp_skill: 200,
-    ordem_trilha: 3,
-    concluida: false,
-    progresso_percentual: 0,
-    cursos: [
-      {
-        id_curso: 5,
-        nome_curso: "React do Zero ao Avançado",
-        link_curso: "https://www.exemplo.com/react-avancado",
-        plataforma: "Udemy",
-        duracao_estimada_horas: 35,
-        dificuldade: "Intermediário",
-        status_curso: 'Pendente',
-        progresso_percentual: 0
-      }
-    ]
-  },
-  {
-    id_skill: 4,
-    nome_skill: "Versionamento com Git",
-    descricao_skill: "Controle de versão para projetos colaborativos",
-    nivel_dificuldade: 'Iniciante',
-    tempo_estimado_horas: 30,
-    xp_skill: 120,
-    ordem_trilha: 4,
-    concluida: false,
-    progresso_percentual: 0,
-    cursos: [
-      {
-        id_curso: 6,
-        nome_curso: "Git e GitHub para Iniciantes",
-        link_curso: "https://www.exemplo.com/git-github",
-        plataforma: "Alura",
-        duracao_estimada_horas: 18,
-        dificuldade: "Iniciante",
-        status_curso: 'Pendente',
-        progresso_percentual: 0
-      }
-    ]
-  }
-];

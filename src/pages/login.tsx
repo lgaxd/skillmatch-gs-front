@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { BackgroundPrincipal } from "../components/background-principal";
 import LoginForm from "../components/auth/login-form";
 import { useAuth } from "../hooks/use-auth";
+import { authService } from "../services/auth";
 
 export function LoginPage() {
     const navigate = useNavigate();
@@ -9,11 +10,13 @@ export function LoginPage() {
 
     const handleLogin = async (credentials: any) => {
         try {
+            console.log("Tentando login...");
             await login(credentials.email, credentials.password);
+            console.log("Login bem-sucedido, redirecionando para dashboard");
             navigate("/dashboard");
-        } catch (error) {
+        } catch (error: any) {
             console.error("Erro no login:", error);
-            alert("Email ou senha incorretos. Usando modo de desenvolvimento.");
+            alert(error.message || "Email ou senha incorretos. Tente novamente.");
         }
     };
 
@@ -28,6 +31,16 @@ export function LoginPage() {
                     className="mt-6 w-full px-6 py-3 text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors cursor-pointer"
                 >
                     Voltar para a página inicial
+                </button>
+                
+                {/* Botão de debug (remova em produção) */}
+                <button
+                    onClick={() => {
+                        authService.debugAuth();
+                    }}
+                    className="mt-4 w-full px-6 py-3 text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors cursor-pointer text-sm"
+                >
+                    Debug Auth
                 </button>
             </div>
         </div>

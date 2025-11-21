@@ -1,7 +1,14 @@
 import React from 'react';
 import { Card } from '../../ui/layout/card';
 import { calcularNivel } from '../../../utils/calculations';
-import type { CarreiraUsuario, ProgressoCursos } from '../../../types/api';
+import type { CarreiraUsuario } from '../../../types/api';
+
+interface ProgressoCursos {
+  cursos_concluidos: number;
+  cursos_andamento: number;
+  cursos_pendentes: number;
+  total_cursos: number;
+}
 
 interface EstatisticasCarreiraProps {
   carreira: CarreiraUsuario;
@@ -12,12 +19,22 @@ export const EstatisticasCarreira: React.FC<EstatisticasCarreiraProps> = ({
   carreira,
   progressoCursos
 }) => {
-  const nivelAtual = calcularNivel(carreira.xp_total);
+  const nivelAtual = calcularNivel(carreira.xp);
+
+  const mapearStatusJornada = (idStatus: number) => {
+    switch (idStatus) {
+      case 1: return 'Não Iniciada';
+      case 2: return 'Em Andamento';
+      case 3: return 'Concluída';
+      case 4: return 'Pausada';
+      default: return 'Em Andamento';
+    }
+  };
 
   const estatisticas = [
     {
       label: 'XP Total',
-      valor: carreira.xp_total.toLocaleString(),
+      valor: carreira.xp.toLocaleString(),
       icone: '⭐',
       cor: 'text-yellow-600'
     },
@@ -48,30 +65,26 @@ export const EstatisticasCarreira: React.FC<EstatisticasCarreiraProps> = ({
       <div className="space-y-4 mb-6">
         <div className="flex justify-between">
           <span className="text-gray-600">Carreira:</span>
-          <span className="font-semibold text-gray-800">{carreira.nome_carreira}</span>
+          <span className="font-semibold text-gray-800">{carreira.carreira.nome}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-gray-600">Área:</span>
-          <span className="font-semibold text-gray-800">{carreira.area_atuacao}</span>
+          <span className="font-semibold text-gray-800">{carreira.carreira.descricao}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-gray-600">Status:</span>
           <span className={`font-semibold ${
-            carreira.status_jornada === 'Em Andamento' ? 'text-green-600' :
-            carreira.status_jornada === 'Concluída' ? 'text-blue-600' :
-            carreira.status_jornada === 'Pausada' ? 'text-yellow-600' : 'text-gray-600'
+            carreira.idStatusJornada === 2 ? 'text-green-600' :
+            carreira.idStatusJornada === 3 ? 'text-blue-600' :
+            carreira.idStatusJornada === 4 ? 'text-yellow-600' : 'text-gray-600'
           }`}>
-            {carreira.status_jornada}
+            {mapearStatusJornada(carreira.idStatusJornada)}
           </span>
         </div>
-        {carreira.data_inicio && (
-          <div className="flex justify-between">
-            <span className="text-gray-600">Início:</span>
-            <span className="font-semibold text-gray-800">
-              {new Date(carreira.data_inicio).toLocaleDateString('pt-BR')}
-            </span>
-          </div>
-        )}
+        <div className="flex justify-between">
+          <span className="text-gray-600">Progresso:</span>
+          <span className="font-semibold text-gray-800">{carreira.progresso}%</span>
+        </div>
       </div>
 
       <div className="border-t border-gray-200 pt-6">
@@ -100,6 +113,8 @@ export const EstatisticasCarreira: React.FC<EstatisticasCarreiraProps> = ({
         <p className="text-sm text-indigo-800 text-center">
           {progressoCursos.cursos_andamento > 0 
             ? '💡 Continue com os cursos em andamento!' 
+            : progressoCursos.cursos_concluidos > 0
+            ? '💡 Parabéns pelos cursos concluídos! Continue assim!'
             : '💡 Inicie um novo curso para progredir!'}
         </p>
       </div>

@@ -1,5 +1,18 @@
-import type { LoginRequest, LoginResponse, Carreira, CarreiraUsuario, Skill, Curso, UsuarioRanking, DashboardData } from '../types/api';
-import type { User } from '../types/user';
+import type {
+  LoginRequest,
+  LoginResponse,
+  Carreira,
+  CarreiraUsuario,
+  CarreiraSkill,
+  Curso,
+  UsuarioCurso,
+  Ranking,
+  DashboardData,
+  Estatisticas,
+  User,
+  RegisterRequest,
+  RegisterResponse
+} from '../types/api';
 
 const API_BASE_URL = 'http://localhost:8080';
 
@@ -15,12 +28,11 @@ class ApiService {
 
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // Para respostas vazias (204 No Content)
       if (response.status === 204) {
         return {} as T;
       }
@@ -36,22 +48,14 @@ class ApiService {
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     return this.request<LoginResponse>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({
-        email: credentials.email,
-        senha: credentials.senha
-      }),
+      body: JSON.stringify(credentials),
     });
   }
 
-  async register(userData: any): Promise<any> {
-    return this.request('/auth/register', {
+  async register(userData: RegisterRequest): Promise<RegisterResponse> {
+    return this.request<RegisterResponse>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({
-        nome: userData.nome,
-        email: userData.email,
-        senha: userData.senha,
-        dataNascimento: userData.dataNascimento
-      }),
+      body: JSON.stringify(userData),
     });
   }
 
@@ -66,7 +70,7 @@ class ApiService {
     });
   }
 
-  // Carreiras & Recomendações
+  // Carreiras
   async getCarreiras(): Promise<Carreira[]> {
     return this.request<Carreira[]>('/carreiras');
   }
@@ -86,13 +90,17 @@ class ApiService {
     return this.request<CarreiraUsuario>(`/usuarios/${userId}/carreira-atual`);
   }
 
-  // Skills & Trilhas
-  async getSkillsCarreira(carreiraId: number): Promise<Skill[]> {
-    return this.request<Skill[]>(`/carreiras/${carreiraId}/skills`);
+  // Skills & Cursos
+  async getSkillsCarreira(carreiraId: number): Promise<CarreiraSkill[]> {
+    return this.request<CarreiraSkill[]>(`/carreiras/${carreiraId}/skills`);
   }
 
   async getCursosSkill(skillId: number): Promise<Curso[]> {
     return this.request<Curso[]>(`/skills/${skillId}/cursos`);
+  }
+
+  async getCursosUsuario(userId: number): Promise<UsuarioCurso[]> {
+    return this.request<UsuarioCurso[]>(`/usuarios/${userId}/cursos`);
   }
 
   // Cursos & Progresso
@@ -108,10 +116,6 @@ class ApiService {
     });
   }
 
-  async getCursosUsuario(userId: number): Promise<Curso[]> {
-    return this.request<Curso[]>(`/usuarios/${userId}/cursos`);
-  }
-
   async updateProgressoCurso(cursoId: number, userId: number, progresso: number): Promise<void> {
     return this.request<void>(`/cursos/${cursoId}/progresso?idUsuario=${userId}`, {
       method: 'PUT',
@@ -120,12 +124,12 @@ class ApiService {
   }
 
   // Ranking & Gamificação
-  async getRanking(mes: string): Promise<UsuarioRanking[]> {
-    return this.request<UsuarioRanking[]>(`/ranking/${mes}`);
+  async getRanking(mes: string): Promise<Ranking[]> {
+    return this.request<Ranking[]>(`/ranking/${mes}`);
   }
 
-  async getRankingUsuario(userId: number): Promise<UsuarioRanking> {
-    return this.request<UsuarioRanking>(`/usuarios/${userId}/ranking`);
+  async getRankingUsuario(userId: number): Promise<Ranking> {
+    return this.request<Ranking>(`/usuarios/${userId}/ranking`);
   }
 
   async addXP(userId: number, xp: number): Promise<void> {
@@ -137,50 +141,17 @@ class ApiService {
 
   // Dashboard & Estatísticas
   async getDashboard(userId: number): Promise<DashboardData> {
-    const response = await this.request<any>(`/usuarios/${userId}/dashboard`);
-    
-    // Adaptar a resposta do backend para o formato esperado pelo frontend
-    return {
-      usuario: {
-        id_usuario: userId,
-        nome_usuario: response.nomeUsuario,
-        email_usuario: '', // Será preenchido pelo getUser se necessário
-        data_nascimento: '',
-        data_cadastro: '',
-        genero: '',
-        telefone: ''
-      },
-      carreira: {
-        id_carreira: 0, // Será preenchido pelo getCarreiraAtual se necessário
-        nome_carreira: response.carreiraAtual,
-        area_atuacao: '',
-        progresso_percentual: response.progressoCarreira || 0,
-        xp_total: response.xpTotal || 0,
-        data_inicio: '',
-        status_jornada: 'Em Andamento'
-      },
-      progressoCursos: {
-        cursos_concluidos: response.cursosConcluidos || 0,
-        cursos_andamento: 0, // Será calculado
-        cursos_pendentes: 0, // Será calculado
-        total_cursos: 0 // Será calculado
-      },
-      ranking: {
-        posicao: 0, // Será preenchido pelo getRankingUsuario
-        pontuacao_total: response.xpTotal || 0,
-        mes_referencia: '2024-01'
-      }
-    };
+    return this.request<DashboardData>(`/usuarios/${userId}/dashboard`);
   }
 
-  async getEstatisticas(userId: number): Promise<any> {
-    return this.request<any>(`/usuarios/${userId}/estatisticas`);
+  async getEstatisticas(userId: number): Promise<Estatisticas> {
+    return this.request<Estatisticas>(`/usuarios/${userId}/estatisticas`);
   }
 
-  // API Python Flask (Machine Learning) - Mantido igual
+  // API Python Flask (Machine Learning)
   async getRecomendacoesKNN(perfil: any): Promise<any> {
     const FLASK_API_URL = 'http://localhost:5000';
-    
+
     try {
       const response = await fetch(`${FLASK_API_URL}/recomendar`, {
         method: 'POST',
@@ -189,15 +160,14 @@ class ApiService {
         },
         body: JSON.stringify({ skills: perfil }),
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       return response.json();
     } catch (error) {
       console.error('Erro na API Flask, retornando mock:', error);
-      // Fallback
       return {
         perfil_enviado: perfil,
         recomendacoes: [

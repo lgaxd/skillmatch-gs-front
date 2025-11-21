@@ -110,7 +110,7 @@ export function Cadastro() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -122,34 +122,49 @@ export function Cadastro() {
       const userData = {
         nome: formData.nomeCompleto,
         email: formData.email,
-        senha: formData.senha,
-        dataNascimento: formData.dataNascimento
+        password: formData.senha,
+        dataNascimento: formData.dataNascimento || undefined
       };
 
+      console.log("📤 Enviando dados de registro:", userData);
+
       // Chamar serviço de autenticação
-      await authService.register(userData);
-      
-      // Fazer login automático após cadastro
-      await authService.login({ email: formData.email, password: formData.senha });
-      
-      // Redireciona para o formulário de perfil
-      navigate("/formulario-perfil");
-    } catch (error) {
-      console.error("Erro no cadastro:", error);
-      setErrors({ submit: "Erro ao realizar cadastro. Tente novamente." });
+      const usuarioRegistrado = await authService.register(userData);
+
+      console.log("✅ Registro bem-sucedido, usuário:", usuarioRegistrado);
+
+      // **CORREÇÃO: Verificar se o usuário foi salvo corretamente**
+      authService.debugAuth();
+
+      // Pequeno delay para garantir que tudo foi salvo
+      setTimeout(() => {
+        console.log("🔄 Redirecionando para formulário de perfil...");
+        navigate("/formulario-perfil");
+      }, 500);
+
+    } catch (error: any) {
+      console.error("❌ Erro no cadastro:", error);
+
+      // Mensagem de erro mais amigável
+      let mensagemErro = error.message || "Erro ao realizar cadastro. Tente novamente.";
+
+      // Se o usuário foi criado mas o login falhou, redirecionar mesmo assim
+      if (error.message.includes('Email ou senha incorretos') && authService.isAuthenticated()) {
+        console.log("⚠️ Login falhou mas usuário está autenticado, redirecionando...");
+        navigate("/formulario-perfil");
+        return;
+      }
+
+      setErrors({ submit: mensagemErro });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleVoltar = () => {
-    navigate("/");
-  };
-
   return (
     <div className="relative min-h-screen py-8 px-4 sm:px-6 lg:px-8">
       <BackgroundPrincipal />
-      
+
       <div className="relative z-10 max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -282,10 +297,10 @@ export function Cadastro() {
               >
                 {isLoading ? "Cadastrando..." : "Criar minha conta"}
               </button>
-              
+
               <button
                 type="button"
-                onClick={handleVoltar}
+                onClick={() => navigate("/")}
                 className="px-8 py-3 text-lg font-semibold text-gray-700 bg-gray-100 border border-gray-300 rounded-xl hover:bg-gray-200 transition-colors cursor-pointer"
               >
                 Voltar

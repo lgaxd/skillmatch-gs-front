@@ -1,10 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { BackgroundPrincipal } from "../components/background-principal";
-import BotaoPersonalizado from "../components/ui/buttons/botao-personalizado";
 import { InputPersonalizado } from "../components/ui/forms/input-personalizado";
 import { SelectPersonalizado } from "../components/ui/forms/select-personalizado";
 import { PasswordStrength } from "../components/ui/forms/password-strength";
+import { authService } from "../services/auth";
 
 interface FormData {
   nomeCompleto: string;
@@ -68,7 +68,6 @@ export function Cadastro() {
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    // Validações básicas
     if (!formData.nomeCompleto.trim()) {
       newErrors.nomeCompleto = "Nome completo é obrigatório";
     }
@@ -100,7 +99,6 @@ export function Cadastro() {
       ...prev,
       [field]: value
     }));
-    // Remove erro do campo quando usuário começar a digitar
     if (errors[field]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -112,7 +110,7 @@ export function Cadastro() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -120,30 +118,53 @@ export function Cadastro() {
     setIsLoading(true);
 
     try {
-      // Simulação de chamada API
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Aqui você faria a chamada real para a API
-      console.log("Dados do cadastro:", formData);
-      
-      // Redireciona para a página de perfil ou dashboard após cadastro
-      navigate("/formulario-perfil");
-    } catch (error) {
-      console.error("Erro no cadastro:", error);
-      setErrors({ submit: "Erro ao realizar cadastro. Tente novamente." });
+      // Preparar dados para o backend
+      const userData = {
+        nome: formData.nomeCompleto,
+        email: formData.email,
+        password: formData.senha,
+        dataNascimento: formData.dataNascimento || undefined
+      };
+
+      console.log("📤 Enviando dados de registro:", userData);
+
+      // Chamar serviço de autenticação
+      const usuarioRegistrado = await authService.register(userData);
+
+      console.log("✅ Registro bem-sucedido, usuário:", usuarioRegistrado);
+
+      // **CORREÇÃO: Verificar se o usuário foi salvo corretamente**
+      authService.debugAuth();
+
+      // Pequeno delay para garantir que tudo foi salvo
+      setTimeout(() => {
+        console.log("🔄 Redirecionando para formulário de perfil...");
+        navigate("/formulario-perfil");
+      }, 500);
+
+    } catch (error: any) {
+      console.error("❌ Erro no cadastro:", error);
+
+      // Mensagem de erro mais amigável
+      let mensagemErro = error.message || "Erro ao realizar cadastro. Tente novamente.";
+
+      // Se o usuário foi criado mas o login falhou, redirecionar mesmo assim
+      if (error.message.includes('Email ou senha incorretos') && authService.isAuthenticated()) {
+        console.log("⚠️ Login falhou mas usuário está autenticado, redirecionando...");
+        navigate("/formulario-perfil");
+        return;
+      }
+
+      setErrors({ submit: mensagemErro });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleVoltar = () => {
-    navigate("/");
-  };
-
   return (
     <div className="relative min-h-screen py-8 px-4 sm:px-6 lg:px-8">
       <BackgroundPrincipal />
-      
+
       <div className="relative z-10 max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -269,15 +290,17 @@ export function Cadastro() {
 
             {/* Botões */}
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <BotaoPersonalizado
-                texto={isLoading ? "Cadastrando..." : "Criar minha conta"}
-                onClick={() => {}} // Submit é feito pelo form
-                className="flex-1"
-              />
-              
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="flex-1 px-8 py-3 text-lg font-semibold text-white bg-indigo-600 border border-transparent rounded-xl hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              >
+                {isLoading ? "Cadastrando..." : "Criar minha conta"}
+              </button>
+
               <button
                 type="button"
-                onClick={handleVoltar}
+                onClick={() => navigate("/")}
                 className="px-8 py-3 text-lg font-semibold text-gray-700 bg-gray-100 border border-gray-300 rounded-xl hover:bg-gray-200 transition-colors cursor-pointer"
               >
                 Voltar

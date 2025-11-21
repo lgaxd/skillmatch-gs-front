@@ -1,33 +1,23 @@
-import type { ApiResponse, LoginRequest, LoginResponse, Carreira, CarreiraUsuario, Skill, Curso, UsuarioRanking, DashboardData, PerfilProfissional, RecomendacaoCarreira } from '../types/api';
-import type { User } from '../types/user';
+import type {
+  LoginRequest,
+  LoginResponse,
+  Carreira,
+  CarreiraUsuario,
+  CarreiraSkill,
+  Curso,
+  UsuarioCurso,
+  Ranking,
+  DashboardData,
+  Estatisticas,
+  User,
+  RegisterRequest,
+  RegisterResponse
+} from '../types/api';
 
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-const FLASK_API_URL = import.meta.env.VITE_FLASK_API_URL || 'http://localhost:5000';
+const API_BASE_URL = 'http://localhost:8080';
 
 class ApiService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const token = localStorage.getItem('userToken');
-    
-    const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
-        ...options.headers,
-      },
-      ...options,
-    };
-
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return response.json();
-  }
-
-  private async flaskRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
@@ -36,143 +26,146 @@ class ApiService {
       ...options,
     };
 
-    const response = await fetch(`${FLASK_API_URL}${endpoint}`, config);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
 
-    return response.json();
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      if (response.status === 204) {
+        return {} as T;
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error(`Erro na requisição para ${endpoint}:`, error);
+      throw error;
+    }
   }
 
   // Autenticação & Usuários
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    return this.request<LoginResponse>('/api/auth/login', {
+    return this.request<LoginResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
   }
 
-  async register(userData: any): Promise<ApiResponse<User>> {
-    return this.request<ApiResponse<User>>('/api/auth/register', {
+  async register(userData: RegisterRequest): Promise<RegisterResponse> {
+    return this.request<RegisterResponse>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
   }
 
   async getUser(id: number): Promise<User> {
-    return this.request<User>(`/api/usuarios/${id}`);
+    return this.request<User>(`/usuarios/${id}`);
   }
 
   async updateUser(id: number, userData: Partial<User>): Promise<User> {
-    return this.request<User>(`/api/usuarios/${id}`, {
+    return this.request<User>(`/usuarios/${id}`, {
       method: 'PUT',
       body: JSON.stringify(userData),
     });
   }
 
-  // Carreiras & Recomendações
+  // Carreiras
   async getCarreiras(): Promise<Carreira[]> {
-    return this.request<Carreira[]>('/api/carreiras');
+    return this.request<Carreira[]>('/carreiras');
   }
 
   async getCarreira(id: number): Promise<Carreira> {
-    return this.request<Carreira>(`/api/carreiras/${id}`);
+    return this.request<Carreira>(`/carreiras/${id}`);
   }
 
   async selectCarreira(userId: number, carreiraId: number): Promise<void> {
-    return this.request<void>(`/api/usuarios/${userId}/carreira`, {
+    return this.request<void>(`/usuarios/${userId}/carreira`, {
       method: 'POST',
-      body: JSON.stringify({ id_carreira: carreiraId }),
+      body: JSON.stringify({ id: carreiraId }),
+    });
+  }
+
+  async updateProgressoCarreira(userId: number, percentual: number): Promise<void> {
+    return this.request<void>(`/usuarios/${userId}/carreira/atualizar-progresso`, {
+      method: 'PUT',
+      body: JSON.stringify({ percentual }),
     });
   }
 
   async getCarreiraAtual(userId: number): Promise<CarreiraUsuario> {
-    return this.request<CarreiraUsuario>(`/api/usuarios/${userId}/carreira-atual`);
+    return this.request<CarreiraUsuario>(`/usuarios/${userId}/carreira-atual`);
   }
 
-  // Skills & Trilhas
-  async getSkillsCarreira(carreiraId: number): Promise<Skill[]> {
-    return this.request<Skill[]>(`/api/carreiras/${carreiraId}/skills`);
+  // Skills & Cursos
+  async getSkillsCarreira(carreiraId: number): Promise<CarreiraSkill[]> {
+    return this.request<CarreiraSkill[]>(`/carreiras/${carreiraId}/skills`);
   }
 
   async getCursosSkill(skillId: number): Promise<Curso[]> {
-    return this.request<Curso[]>(`/api/skills/${skillId}/cursos`);
+    return this.request<Curso[]>(`/skills/${skillId}/cursos`);
   }
 
-  async updateProgressoSkill(skillId: number, progresso: number): Promise<void> {
-    return this.request<void>(`/api/skills/${skillId}/progresso`, {
-      method: 'PUT',
-      body: JSON.stringify({ progresso_percentual: progresso }),
-    });
+  async getCursosUsuario(userId: number): Promise<UsuarioCurso[]> {
+    return this.request<UsuarioCurso[]>(`/usuarios/${userId}/cursos`);
   }
 
   // Cursos & Progresso
-  async iniciarCurso(cursoId: number): Promise<void> {
-    return this.request<void>(`/api/cursos/${cursoId}/iniciar`, {
+  async iniciarCurso(cursoId: number, userId: number): Promise<void> {
+    return this.request<void>(`/cursos/${cursoId}/iniciar?idUsuario=${userId}`, {
       method: 'POST',
     });
   }
 
-  async concluirCurso(cursoId: number): Promise<void> {
-    return this.request<void>(`/api/cursos/${cursoId}/concluir`, {
+  async concluirCurso(cursoId: number, userId: number): Promise<void> {
+    return this.request<void>(`/cursos/${cursoId}/concluir?idUsuario=${userId}`, {
       method: 'PUT',
     });
   }
 
-  async getCursosUsuario(userId: number): Promise<Curso[]> {
-    return this.request<Curso[]>(`/api/usuarios/${userId}/cursos`);
-  }
-
-  async updateProgressoCurso(cursoId: number, progresso: number): Promise<void> {
-    return this.request<void>(`/api/cursos/${cursoId}/progresso`, {
+  async updateProgressoCurso(cursoId: number, userId: number, progresso: number): Promise<void> {
+    return this.request<void>(`/cursos/${cursoId}/progresso?idUsuario=${userId}`, {
       method: 'PUT',
-      body: JSON.stringify({ progresso_percentual: progresso }),
+      body: JSON.stringify({ percentual: progresso }),
     });
   }
 
   // Ranking & Gamificação
-  async getRanking(mes: string): Promise<UsuarioRanking[]> {
-    return this.request<UsuarioRanking[]>(`/api/ranking/${mes}`);
+  async getRanking(mes: string): Promise<Ranking[]> {
+    return this.request<Ranking[]>(`/ranking/${mes}`);
   }
 
-  async getRankingUsuario(userId: number): Promise<UsuarioRanking> {
-    return this.request<UsuarioRanking>(`/api/usuarios/${userId}/ranking`);
+  async getRankingUsuario(userId: number): Promise<Ranking> {
+    return this.request<Ranking>(`/usuarios/${userId}/ranking`);
   }
 
   async addXP(userId: number, xp: number): Promise<void> {
-    return this.request<void>(`/api/usuarios/${userId}/xp`, {
+    return this.request<void>(`/usuarios/${userId}/xp`, {
       method: 'POST',
-      body: JSON.stringify({ xp }),
+      body: JSON.stringify({ quantidadeXp: xp }),
+    });
+  }
+
+  async adicionarTodosUsuariosAoRanking(mes: string): Promise<void> {
+    return this.request<void>(`/usuarios/ranking/adicionar-todos`, {
+      method: 'POST',
+      body: JSON.stringify({ mesReferencia: mes }),
+    });
+  }
+
+  async atualizarRankingTodosUsuarios(): Promise<void> {
+    return this.request<void>(`/usuarios/ranking/atualizar-mes-atual`, {
+      method: 'PUT'
     });
   }
 
   // Dashboard & Estatísticas
   async getDashboard(userId: number): Promise<DashboardData> {
-    return this.request<DashboardData>(`/api/usuarios/${userId}/dashboard`);
+    return this.request<DashboardData>(`/usuarios/${userId}/dashboard`);
   }
 
-  async getEstatisticas(userId: number): Promise<any> {
-    return this.request<any>(`/api/usuarios/${userId}/estatisticas`);
-  }
-
-  // API Python Flask (Machine Learning)
-  async getRecomendacoesKNN(perfil: PerfilProfissional): Promise<RecomendacaoCarreira[]> {
-    return this.flaskRequest<RecomendacaoCarreira[]>('/api/knn/recomendacoes', {
-      method: 'POST',
-      body: JSON.stringify(perfil),
-    });
-  }
-
-  async processarPerfil(perfil: PerfilProfissional): Promise<any> {
-    return this.flaskRequest<any>('/api/knn/processar-perfil', {
-      method: 'POST',
-      body: JSON.stringify(perfil),
-    });
-  }
-
-  async getModeloStatus(): Promise<{ status: string }> {
-    return this.flaskRequest<{ status: string }>('/api/knn/modelo-status');
+  async getEstatisticas(userId: number): Promise<Estatisticas> {
+    return this.request<Estatisticas>(`/usuarios/${userId}/estatisticas`);
   }
 }
 

@@ -1,123 +1,110 @@
-import type { User } from "./user";
+export interface User {
+  id: number;
+  nome: string;
+  dataNascimento: string;
+}
 
-export interface ApiResponse<T> {
-  data: T;
-  message?: string;
-  status: number;
+export interface Carreira {
+  id: number;
+  nome: string;
+  descricao: string;
+  demanda: number;
+}
+
+export interface Skill {
+  id: number;
+  nome: string;
+  nivel: string;
+}
+
+export interface CarreiraSkill {
+  id: number;
+  carreira: Carreira;
+  skill: Skill;
+  ordem: number;
+}
+
+export interface Curso {
+  id: number;
+  skill: Skill;
+  nome: string;
+  link: string;
+}
+
+export interface UsuarioCurso {
+  id: number;
+  usuario: User;
+  curso: Curso;
+  status: 'Pendente' | 'Em andamento' | 'Concluído';
+  progresso: number;
+}
+
+export interface Ranking {
+  id: number;
+  usuario: User;
+  pontuacao: number;
+  posicao: number;
+  mesReferencia: string;
+}
+
+export interface CarreiraUsuario {
+  id: number;
+  usuario: User;
+  carreira: Carreira;
+  idStatusJornada: number;
+  progresso: number;
+  xp: number;
+}
+
+export interface DashboardData {
+  nomeUsuario: string;
+  carreiraAtual: string;
+  progressoCarreira: number;
+  xpTotal: number;
+  cursosConcluidos: number;
+}
+
+export interface Estatisticas {
+  totalCursosIniciados: number;
+  totalCursosConcluidos: number;
+}
+
+// Interface para o dashboard completo
+export interface DashboardCompleto {
+  usuario: User;
+  carreiraUsuario: CarreiraUsuario | null;
+  dashboardData: DashboardData;
+  estatisticas: Estatisticas;
+  ranking: Ranking | null;
+  top3Ranking?: Array<{ // Adicionar esta propriedade
+    posicao: number;
+    nome: string;
+    pontuacao: number;
+  }>;
 }
 
 export interface LoginRequest {
   email: string;
-  password: string;
+  senha: string;
 }
 
 export interface LoginResponse {
-  token: string;
-  usuario: User;
+  id: number;
+  nome: string;
+  email: string;
+  dataNascimento?: string;
 }
 
-// Tipos para Carreiras
-export interface Carreira {
-  id_carreira: number;
-  nome_carreira: string;
-  area_atuacao: string;
-  descricao: string;
-  demanda: 'alta' | 'media' | 'baixa';
-  salario_medio: string;
-  tempo_preparacao: string;
-  skills_principais: string[];
+export interface RegisterRequest {
+  nome: string;
+  email: string;
+  senha: string;
+  dataNascimento?: string;
 }
 
-export interface CarreiraUsuario {
-  id_carreira: number;
-  nome_carreira: string;
-  area_atuacao: string;
-  progresso_percentual: number;
-  xp_total: number;
-  data_inicio: string;
-  status_jornada: 'Em Andamento' | 'Concluída' | 'Pausada';
-}
-
-// Tipos para Skills
-export interface Skill {
-  id_skill: number;
-  nome_skill: string;
-  descricao_skill: string;
-  nivel_dificuldade: 'Iniciante' | 'Intermediário' | 'Avançado';
-  tempo_estimado_horas: number;
-  xp_skill: number;
-  ordem_trilha: number;
-  concluida: boolean;
-  progresso_percentual: number;
-}
-
-export interface SkillComCursos extends Skill {
-  cursos: Curso[];
-}
-
-// Tipos para Cursos
-export interface Curso {
-  id_curso: number;
-  nome_curso: string;
-  link_curso: string;
-  plataforma: string;
-  duracao_estimada_horas: number;
-  dificuldade: string;
-  status_curso: 'Pendente' | 'Em andamento' | 'Concluído';
-  progresso_percentual: number;
-}
-
-// Tipos para Ranking
-export interface UsuarioRanking {
-  id_usuario: number;
-  nome_usuario: string;
-  posicao: number;
-  pontuacao_total: number;
-  carreira: string;
-  area_atuacao: string;
-  mes_referencia: string;
-}
-
-export interface RankingUsuario {
-  posicao: number;
-  pontuacao_total: number;
-  mes_referencia: string;
-}
-
-// Tipos para Dashboard
-export interface DashboardData {
-  usuario: User;
-  carreira: CarreiraUsuario;
-  progressoCursos: ProgressoCursos;
-  ranking: RankingUsuario;
-}
-
-export interface ProgressoCursos {
-  cursos_concluidos: number;
-  cursos_andamento: number;
-  cursos_pendentes: number;
-  total_cursos: number;
-}
-
-// Tipos para KNN/Recomendações
-export interface PerfilProfissional {
-  experienciaAnos: string;
-  areaAtual: string;
-  nivelSenioridade: string;
-  estiloTrabalho: string;
-  interessesTecnologia: string;
-  interessesNegocios: string;
-  interessesCriatividade: string;
-  habilidadesComunicacao: string;
-  habilidadesLideranca: string;
-  habilidadesAnalise: string;
-  preferenciaAmbiente: string;
-  disponibilidadeEstudo: string;
-  objetivoCarreira: string;
-  faixaSalarial: string;
-  mobilidadeGeografica: string;
-}
-
-export interface RecomendacaoCarreira extends Carreira {
-  alinhamento: number;
+export interface RegisterResponse {
+  id: number;
+  nome: string;
+  email: string;
+  dataNascimento?: string;
 }

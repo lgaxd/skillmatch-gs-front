@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { BackgroundPrincipal } from "../components/background-principal";
 import BotaoPersonalizado from "../components/ui/buttons/botao-personalizado";
 import { Loading } from "../components/ui/feedback/loading";
+import { authService } from "../services/auth";
+import { apiService } from "../services/api";
 
 interface UsuarioRanking {
   id_usuario: number;
@@ -25,7 +27,7 @@ export function Ranking() {
   const [isLoading, setIsLoading] = useState(true);
   const [rankingGeral, setRankingGeral] = useState<UsuarioRanking[]>([]);
   const [meuRanking, setMeuRanking] = useState<RankingUsuario | null>(null);
-  const [mesSelecionado, setMesSelecionado] = useState('2024-01');
+  const [mesSelecionado, setMesSelecionado] = useState('2025-11');
 
   // Dados mockados baseados no seu schema - TB_RANKING + TB_USUARIO + TB_USUARIO_CARREIRA + TB_CARREIRA
   const rankingMock: UsuarioRanking[] = [
@@ -128,38 +130,54 @@ export function Ranking() {
   };
 
   const mesesDisponiveis = [
+    { value: '2025-11', label: 'Novembro 2025' },
     { value: '2024-01', label: 'Janeiro 2024' },
     { value: '2023-12', label: 'Dezembro 2023' },
     { value: '2023-11', label: 'Novembro 2023' }
   ];
 
   useEffect(() => {
-    const carregarRanking = async () => {
-      setIsLoading(true);
-      try {
-        
-        // Aqui viriam as chamadas reais para a API baseadas no seu schema:
-        // - TB_RANKING (posições do mês)
-        // - TB_USUARIO (nomes dos usuários)
-        // - TB_USUARIO_CARREIRA + TB_CARREIRA (carreira atual de cada usuário)
-        // - TB_AREAS_ATUACAO (área de atuação)
-        
-        setRankingGeral(rankingMock);
-        setMeuRanking(meuRankingMock);
-        
-      } catch (error) {
-        console.error("Erro ao carregar ranking:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const carregarRanking = async () => {
+    setIsLoading(true);
+    try {
+      // Buscar ranking geral
+      const rankingGeralAPI = await apiService.getRanking(mesSelecionado);
+      
+      // Converter para o formato do componente
+      const rankingFormatado = rankingGeralAPI.map((item: any) => ({
+        id_usuario: item.usuario.id,
+        nome_usuario: item.usuario.nome,
+        posicao: item.posicao,
+        pontuacao_total: item.pontuacao,
+        carreira: "Carreira", // Você precisará buscar a carreira de cada usuário
+        area_atuacao: "Tecnologia",
+        mes_referencia: item.mesReferencia
+      }));
 
-    carregarRanking();
-  }, [mesSelecionado]);
-
-  const handleVoltar = () => {
-    navigate("/dashboard");
+      setRankingGeral(rankingFormatado);
+      
+      // Buscar ranking do usuário atual
+      const userId = authService.getCurrentUserId();
+      const meuRankingAPI = await apiService.getRankingUsuario(userId);
+      
+      setMeuRanking({
+        posicao: meuRankingAPI.posicao,
+        pontuacao_total: meuRankingAPI.pontuacao,
+        mes_referencia: meuRankingAPI.mesReferencia
+      });
+      
+    } catch (error) {
+      console.error("Erro ao carregar ranking:", error);
+      // Usar dados mockados em caso de erro
+      setRankingGeral(rankingMock);
+      setMeuRanking(meuRankingMock);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  carregarRanking();
+}, [mesSelecionado]);
 
   const getMedalha = (posicao: number) => {
     switch (posicao) {
@@ -177,15 +195,6 @@ export function Ranking() {
       case 3: return "bg-gradient-to-r from-orange-100 to-orange-200 border-orange-300";
       case 4: case 5: return "bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200";
       default: return "bg-white border-gray-200";
-    }
-  };
-
-  const getCorTextoPosicao = (posicao: number) => {
-    switch (posicao) {
-      case 1: return "text-yellow-600";
-      case 2: return "text-gray-600";
-      case 3: return "text-orange-600";
-      default: return "text-gray-700";
     }
   };
 
@@ -262,7 +271,7 @@ export function Ranking() {
                   <h2 className="text-2xl font-bold text-white">
                     Top 10 - {mesesDisponiveis.find(m => m.value === mesSelecionado)?.label}
                   </h2>
-                  <div className="text-white text-sm bg-white bg-opacity-20 px-3 py-1 rounded-full">
+                  <div className="text-black text-sm bg-white bg-opacity-20 px-3 py-1 rounded-full">
                     {rankingGeral.length} competidores
                   </div>
                 </div>
@@ -480,7 +489,7 @@ export function Ranking() {
             {/* Botão Voltar */}
             <BotaoPersonalizado
               texto="Voltar ao Dashboard"
-              onClick={handleVoltar}
+              onClick={() => navigate("/dashboard")}
               className="w-full"
             />
           </div>

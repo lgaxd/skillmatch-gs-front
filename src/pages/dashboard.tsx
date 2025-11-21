@@ -13,7 +13,7 @@ import type { CarreiraUsuario, DashboardData } from '../types/api';
 
 export function Dashboard() {
   const navigate = useNavigate();
-  const { dashboardCompleto, isLoading, error } = useDashboard();
+  const { dashboardCompleto, isLoading, error, recarregarDashboard } = useDashboard();
 
   // Loading state
   if (isLoading) {
@@ -43,7 +43,7 @@ export function Dashboard() {
             </p>
             <div className="space-y-3">
               <button
-                onClick={() => window.location.reload()}
+                onClick={() => recarregarDashboard()}
                 className="w-full px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors cursor-pointer"
               >
                 Tentar Novamente
@@ -117,7 +117,7 @@ export function Dashboard() {
                 progressoCursos={progressoCursosCompativel}
                 onContinuarJornada={() => {
                   if (carreiraCompativel.id) {
-                    navigate(`/trilha/${carreiraCompativel.id}`);
+                    navigate(`/trilha/${carreiraCompativel.carreira.id}`);
                   } else {
                     navigate('/recomendacoes');
                   }
@@ -194,10 +194,13 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 }) => {
   const nomeUsuario = usuario?.nome || 'Usuário';
   const nomeCarreira = carreira?.carreira.nome || dashboardData.carreiraAtual || 'Nenhuma carreira selecionada';
+  
+  // Usar o progresso da carreira se disponível, senão usar do dashboardData
+  const progresso = carreira?.progresso || dashboardData.progressoCarreira || 0;
   const xpTotal = carreira?.xp || dashboardData.xpTotal || 0;
   
   const nivelAtual = calcularNivel(xpTotal);
-  const { progresso } = calcularProgressoNivel(xpTotal, nivelAtual);
+  const { progresso: progressoNivel } = calcularProgressoNivel(xpTotal, nivelAtual);
 
   return (
     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
@@ -220,7 +223,11 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               <div className="text-sm text-gray-500">Seu nível</div>
             </div>
             <div className="flex-1">
-              <ProgressBar value={progresso} label={`${xpTotal} XP`} />
+              <ProgressBar value={progressoNivel} label={`${xpTotal} XP`} />
+              <div className="flex justify-between text-sm text-gray-600 mt-1">
+                <span>Progresso da Jornada: {progresso}%</span>
+                <span>{xpTotal} XP</span>
+              </div>
             </div>
           </div>
         )}

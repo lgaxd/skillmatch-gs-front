@@ -6,6 +6,7 @@ import { Loading } from "../components/ui/feedback/loading";
 import { apiService } from "../services/api";
 import { authService } from "../services/auth";
 import type { CarreiraSkill, Curso, UsuarioCurso, CarreiraUsuario } from '../types/api';
+import { useDashboard } from '../hooks/use-dashboard';
 
 interface SkillCompleta {
   id_skill: number;
@@ -42,12 +43,64 @@ interface CarreiraTrilha {
 }
 
 export function Trilha() {
+  const { atualizarProgresso } = useDashboard();
   const navigate = useNavigate();
   const { idCarreira } = useParams<{ idCarreira: string }>();
   const [isLoading, setIsLoading] = useState(true);
   const [carreira, setCarreira] = useState<CarreiraTrilha | null>(null);
   const [skills, setSkills] = useState<SkillCompleta[]>([]);
   const [skillExpandida, setSkillExpandida] = useState<number | null>(null);
+
+  // Funções auxiliares para determinar plataforma e duração
+  const getPlataformaFromLink = (link: string): string => {
+    if (link.includes('alura')) return 'Alura';
+    if (link.includes('udemy')) return 'Udemy';
+    if (link.includes('coursera')) return 'Coursera';
+    if (link.includes('edx')) return 'edX';
+    if (link.includes('youtube')) return 'YouTube';
+    return 'Plataforma Online';
+  };
+
+  const estimativaDuracao = (nomeCurso: string): number => {
+    if (nomeCurso.toLowerCase().includes('fundamento') || nomeCurso.toLowerCase().includes('básico')) return 8;
+    if (nomeCurso.toLowerCase().includes('avançado') || nomeCurso.toLowerCase().includes('completo')) return 20;
+    return 12; // padrão
+  };
+
+  const estimativaTempoSkill = (nivel: string): number => {
+    switch (nivel) {
+      case 'Iniciante': return 20;
+      case 'Intermediário': return 40;
+      case 'Avançado': return 60;
+      default: return 30;
+    }
+  };
+
+  const calcularXPSkill = (nivel: string): number => {
+    switch (nivel) {
+      case 'Iniciante': return 100;
+      case 'Intermediário': return 150;
+      case 'Avançado': return 200;
+      default: return 100;
+    }
+  };
+
+  const getDescricaoSkill = (nome: string, nivel: string): string => {
+    const descricoes: { [key: string]: string } = {
+      'HTML/CSS': 'Fundamentos de estruturação e estilização web',
+      'JavaScript': 'Programação para interatividade web',
+      'React': 'Biblioteca para interfaces de usuário modernas',
+      'TypeScript': 'JavaScript tipado para desenvolvimento escalável',
+      'Node.js': 'JavaScript no servidor para aplicações backend',
+      'SQL': 'Linguagem para consulta e manipulação de bancos de dados',
+      'Python': 'Linguagem versátil para automação e análise de dados',
+      'Git': 'Controle de versão para projetos colaborativos',
+      'APIs': 'Desenvolvimento e consumo de interfaces de programação',
+      'Testes': 'Garantia de qualidade através de testes automatizados'
+    };
+
+    return descricoes[nome] || `Skill ${nome} - Nível ${nivel}`;
+  };
 
   useEffect(() => {
     const carregarTrilha = async () => {
@@ -60,60 +113,97 @@ export function Trilha() {
         const carreiraId = parseInt(idCarreira);
         const userId = authService.getCurrentUserId();
 
+        console.log(`🎯 Carregando trilha para carreira ${carreiraId} e usuário ${userId}`);
+
         // Buscar carreira atual
         const carreiraAtual: CarreiraUsuario = await apiService.getCarreiraAtual(userId);
-        
+
         // Buscar skills da carreira
         const skillsBackend: CarreiraSkill[] = await apiService.getSkillsCarreira(carreiraId);
-        
-        // Buscar cursos do usuário
-        const cursosUsuario: UsuarioCurso[] = await apiService.getCursosUsuario(userId);
+
+        console.log(`📚 Encontradas ${skillsBackend.length} skills para a carreira`);
+
+        // Buscar cursos do usuário - pode retornar array vazio para usuários novos
+        let cursosUsuario: UsuarioCurso[] = [];
+        try {
+          cursosUsuario = await apiService.getCursosUsuario(userId);
+          console.log(`📖 Usuário tem ${cursosUsuario.length} cursos registrados`);
+        } catch (error) {
+          console.log("ℹ️ Usuário não tem cursos registrados ainda");
+        }
 
         // Processar skills com cursos
         const skillsComCursos = await Promise.all(
           skillsBackend.map(async (carreiraSkill) => {
             const skill = carreiraSkill.skill;
-            
-            // Buscar cursos da skill
-            const cursosSkill: Curso[] = await apiService.getCursosSkill(skill.id);
-            
-            // Mapear cursos com status do usuário
-            const cursosComStatus: CursoTrilha[] = cursosSkill.map((curso) => {
-              const cursoUsuario = cursosUsuario.find(uc => uc.curso.id === curso.id);
-              
+
+            console.log(`🔍 Buscando cursos para skill ${skill.id} - ${skill.nome}`);
+
+            try {
+              // Buscar cursos da skill
+              const cursosSkill: Curso[] = await apiService.getCursosSkill(skill.id);
+              console.log(`✅ Encontrados ${cursosSkill.length} cursos para skill ${skill.id}`);
+
+              // Mapear cursos com status do usuário
+              // Para usuários novos, todos os cursos começam como 'Pendente'
+              const cursosComStatus: CursoTrilha[] = cursosSkill.map((curso) => {
+                // Encontrar se o usuário já tem algum progresso neste curso
+                const cursoUsuario = cursosUsuario.find(uc =>
+                  uc.curso && uc.curso.id === curso.id
+                );
+
+                return {
+                  id_curso: curso.id,
+                  nome_curso: curso.nome,
+                  link_curso: curso.link,
+                  plataforma: getPlataformaFromLink(curso.link),
+                  duracao_estimada_horas: estimativaDuracao(curso.nome),
+                  dificuldade: skill.nivel,
+                  status_curso: cursoUsuario?.status || 'Pendente', // Default para Pendente
+                  progresso_percentual: cursoUsuario?.progresso || 0 // Default para 0%
+                };
+              });
+
+              const cursosConcluidos = cursosComStatus.filter(c => c.status_curso === 'Concluído').length;
+              const progressoSkill = cursosComStatus.length > 0 ? (cursosConcluidos / cursosComStatus.length) * 100 : 0;
+
               return {
-                id_curso: curso.id,
-                nome_curso: curso.nome,
-                link_curso: curso.link,
-                plataforma: "Plataforma Online",
-                duracao_estimada_horas: 10,
-                dificuldade: skill.nivel,
-                status_curso: cursoUsuario?.status || 'Pendente',
-                progresso_percentual: cursoUsuario?.progresso || 0
+                id_skill: skill.id,
+                nome_skill: skill.nome,
+                descricao_skill: getDescricaoSkill(skill.nome, skill.nivel),
+                nivel_dificuldade: skill.nivel as 'Iniciante' | 'Intermediário' | 'Avançado',
+                tempo_estimado_horas: estimativaTempoSkill(skill.nivel),
+                xp_skill: calcularXPSkill(skill.nivel),
+                ordem_trilha: carreiraSkill.ordem,
+                concluida: progressoSkill === 100,
+                progresso_percentual: progressoSkill,
+                cursos: cursosComStatus
               };
-            });
+            } catch (error) {
+              console.error(`❌ Erro ao carregar cursos da skill ${skill.id}:`, error);
 
-            const cursosConcluidos = cursosComStatus.filter(c => c.status_curso === 'Concluído').length;
-            const progressoSkill = cursosComStatus.length > 0 ? (cursosConcluidos / cursosComStatus.length) * 100 : 0;
-
-            return {
-              id_skill: skill.id,
-              nome_skill: skill.nome,
-              descricao_skill: `Skill ${skill.nome} - ${skill.nivel}`,
-              nivel_dificuldade: skill.nivel as 'Iniciante' | 'Intermediário' | 'Avançado',
-              tempo_estimado_horas: 40,
-              xp_skill: 100,
-              ordem_trilha: carreiraSkill.ordem,
-              concluida: progressoSkill === 100,
-              progresso_percentual: progressoSkill,
-              cursos: cursosComStatus
-            };
+              // Retornar skill sem cursos em caso de erro
+              return {
+                id_skill: skill.id,
+                nome_skill: skill.nome,
+                descricao_skill: getDescricaoSkill(skill.nome, skill.nivel),
+                nivel_dificuldade: skill.nivel as 'Iniciante' | 'Intermediário' | 'Avançado',
+                tempo_estimado_horas: estimativaTempoSkill(skill.nivel),
+                xp_skill: calcularXPSkill(skill.nivel),
+                ordem_trilha: carreiraSkill.ordem,
+                concluida: false,
+                progresso_percentual: 0,
+                cursos: []
+              };
+            }
           })
         );
 
         // Calcular progresso geral
         const skillsConcluidas = skillsComCursos.filter(skill => skill.concluida).length;
         const progressoGeral = skillsComCursos.length > 0 ? (skillsConcluidas / skillsComCursos.length) * 100 : 0;
+
+        console.log(`📊 Progresso geral: ${progressoGeral}% (${skillsConcluidas}/${skillsComCursos.length} skills concluídas)`);
 
         setCarreira({
           id_carreira: carreiraId,
@@ -128,7 +218,7 @@ export function Trilha() {
         setSkills(skillsComCursos);
 
       } catch (error) {
-        console.error("Erro ao carregar trilha:", error);
+        console.error("❌ Erro ao carregar trilha:", error);
         // Usar fallback em caso de erro
         setCarreira({
           id_carreira: 1,
@@ -169,9 +259,9 @@ export function Trilha() {
         }))
       );
 
-      console.log(`Curso ${cursoId} iniciado`);
+      console.log(`✅ Curso ${cursoId} iniciado`);
     } catch (error) {
-      console.error("Erro ao iniciar curso:", error);
+      console.error("❌ Erro ao iniciar curso:", error);
       alert("Erro ao iniciar curso. Tente novamente.");
     }
   };
@@ -185,7 +275,7 @@ export function Trilha() {
       try {
         await apiService.addXP(userId, 100);
       } catch (xpError) {
-        console.log("XP não adicionado, mas continuando...");
+        console.log("ℹ️ XP não adicionado, mas continuando...");
       }
 
       // Atualização local
@@ -200,7 +290,7 @@ export function Trilha() {
         }))
       );
 
-      // Recalcular progresso da skill - CORREÇÃO: Use CursoTrilha
+      // Recalcular progresso da skill
       setSkills(prevSkills =>
         prevSkills.map(skill => {
           const cursosDaSkill = skill.cursos;
@@ -222,16 +312,30 @@ export function Trilha() {
         ).length;
         const progressoGeral = skills.length > 0 ? (skillsConcluidas / skills.length) * 100 : 0;
 
+        // Calcular nova XP (adiciona 100 XP por curso concluído)
+        const novaXP = carreira.xp_total + 100;
+
+        // Calcular cursos concluídos
+        const totalCursosConcluidos = skills.reduce((total, skill) =>
+          total + skill.cursos.filter(c => c.status_curso === 'Concluído').length, 0
+        );
+
         setCarreira(prev => prev ? {
           ...prev,
           progresso_geral: progressoGeral,
-          skills_concluidas: skillsConcluidas
+          skills_concluidas: skillsConcluidas,
+          xp_total: novaXP
         } : null);
+
+        // 🔥 ATUALIZAR O DASHBOARD COM O NOVO PROGRESSO
+        if (atualizarProgresso) {
+          atualizarProgresso(progressoGeral, novaXP, totalCursosConcluidos);
+        }
       }
 
-      console.log(`Curso ${cursoId} marcado como concluído`);
+      console.log(`✅ Curso ${cursoId} marcado como concluído`);
     } catch (error) {
-      console.error("Erro ao concluir curso:", error);
+      console.error("❌ Erro ao concluir curso:", error);
       alert("Erro ao concluir curso. Tente novamente.");
     }
   };
@@ -253,9 +357,9 @@ export function Trilha() {
         }))
       );
 
-      console.log(`Progresso do curso ${cursoId} atualizado para ${progresso}%`);
+      console.log(`📈 Progresso do curso ${cursoId} atualizado para ${progresso}%`);
     } catch (error) {
-      console.error("Erro ao atualizar progresso:", error);
+      console.error("❌ Erro ao atualizar progresso:", error);
       alert("Erro ao atualizar progresso. Tente novamente.");
     }
   };
@@ -282,12 +386,37 @@ export function Trilha() {
     navigate("/dashboard");
   };
 
-  if (isLoading || !carreira) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <BackgroundPrincipal />
         <div className="relative z-10">
           <Loading message="Carregando sua trilha de aprendizado..." size="lg" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!carreira) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <BackgroundPrincipal />
+        <div className="relative z-10 bg-white rounded-2xl p-8 shadow-2xl max-w-md">
+          <div className="text-center">
+            <div className="text-6xl mb-4">😕</div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Erro ao Carregar Trilha
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Não foi possível carregar os dados da trilha.
+            </p>
+            <button
+              onClick={handleVoltar}
+              className="w-full px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors cursor-pointer"
+            >
+              Voltar ao Dashboard
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -346,241 +475,269 @@ export function Trilha() {
 
         {/* Lista de Skills */}
         <div className="space-y-4">
-          {skills.map((skill) => (
-            <div
-              key={skill.id_skill}
-              className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-200"
-            >
-              {/* Header da Skill */}
+          {skills.length > 0 ? (
+            skills.map((skill) => (
               <div
-                className="p-6 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
-                onClick={() => toggleSkill(skill.id_skill)}
+                key={skill.id_skill}
+                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-200"
               >
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  <div className="flex items-start gap-4 flex-1">
-                    {/* Número e Status */}
-                    <div className="flex flex-col items-center">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-white ${skill.concluida ? 'bg-green-500' : 'bg-indigo-500'
-                        }`}>
-                        {skill.ordem_trilha}
-                      </div>
-                      {skill.concluida && (
-                        <div className="mt-1 text-green-500 text-sm">✓</div>
-                      )}
-                    </div>
-
-                    {/* Informações da Skill */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-xl font-bold text-gray-800">
-                          {skill.nome_skill}
-                        </h3>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getDificuldadeColor(skill.nivel_dificuldade)}`}>
-                          {skill.nivel_dificuldade}
-                        </span>
-                      </div>
-
-                      <p className="text-gray-600 mb-3">
-                        {skill.descricao_skill}
-                      </p>
-
-                      <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                        <div className="flex items-center gap-1">
-                          <span>⏱️</span>
-                          <span>{skill.tempo_estimado_horas}h estimadas</span>
+                {/* Header da Skill */}
+                <div
+                  className="p-6 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+                  onClick={() => toggleSkill(skill.id_skill)}
+                >
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="flex items-start gap-4 flex-1">
+                      {/* Número e Status */}
+                      <div className="flex flex-col items-center">
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-white ${skill.concluida ? 'bg-green-500' : 'bg-indigo-500'
+                          }`}>
+                          {skill.ordem_trilha}
                         </div>
-                        <div className="flex items-center gap-1">
-                          <span>⭐</span>
-                          <span>{skill.xp_skill} XP</span>
+                        {skill.concluida && (
+                          <div className="mt-1 text-green-500 text-sm">✓</div>
+                        )}
+                      </div>
+
+                      {/* Informações da Skill */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-xl font-bold text-gray-800">
+                            {skill.nome_skill}
+                          </h3>
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getDificuldadeColor(skill.nivel_dificuldade)}`}>
+                            {skill.nivel_dificuldade}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <span>📚</span>
-                          <span>{skill.cursos.length} cursos</span>
+
+                        <p className="text-gray-600 mb-3">
+                          {skill.descricao_skill}
+                        </p>
+
+                        <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                          <div className="flex items-center gap-1">
+                            <span>⏱️</span>
+                            <span>{skill.tempo_estimado_horas}h estimadas</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span>⭐</span>
+                            <span>{skill.xp_skill} XP</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span>📚</span>
+                            <span>{skill.cursos.length} cursos</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Progresso e Ação */}
-                  <div className="flex flex-col items-end gap-3">
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-gray-800">
-                        {skill.progresso_percentual.toFixed(1)}%
+                    {/* Progresso e Ação */}
+                    <div className="flex flex-col items-end gap-3">
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-gray-800">
+                          {skill.progresso_percentual.toFixed(1)}%
+                        </div>
+                        <div className="text-sm text-gray-600">Concluído</div>
                       </div>
-                      <div className="text-sm text-gray-600">Concluído</div>
-                    </div>
-                    <div className="w-24 bg-gray-200 rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full ${skill.concluida ? 'bg-green-500' : 'bg-blue-500'
-                          }`}
-                        style={{ width: `${skill.progresso_percentual}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Cursos da Skill (expandido) */}
-              {skillExpandida === skill.id_skill && (
-                <div className="border-t border-gray-200">
-                  <div className="p-6">
-                    <h4 className="text-lg font-semibold text-gray-800 mb-4">
-                      Cursos Recomendados ({skill.cursos.length})
-                    </h4>
-
-                    <div className="space-y-4">
-                      {skill.cursos.map((curso) => (
+                      <div className="w-24 bg-gray-200 rounded-full h-2">
                         <div
-                          key={curso.id_curso}
-                          className="border border-gray-200 rounded-xl p-4 hover:border-indigo-300 transition-colors duration-200"
-                        >
-                          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                            <div className="flex-1">
-                              <div className="flex items-start gap-3 mb-2">
-                                <div className="flex-1">
-                                  <h5 className="font-semibold text-gray-800 mb-1">
-                                    {curso.nome_curso}
-                                  </h5>
-                                  <div className="flex flex-wrap gap-3 text-sm text-gray-600 mb-2">
-                                    <span>🏢 {curso.plataforma}</span>
-                                    <span>⏱️ {curso.duracao_estimada_horas}h</span>
-                                    <span>📊 {curso.dificuldade}</span>
-                                  </div>
-                                </div>
-                                <span className={`px-3 py-1 text-sm font-semibold rounded-full border ${getStatusColor(curso.status_curso)}`}>
-                                  {curso.status_curso}
-                                </span>
-                              </div>
-
-                              {curso.status_curso === 'Em andamento' && (
-                                <div className="mb-3">
-                                  <div className="flex justify-between text-sm text-gray-600 mb-1">
-                                    <span>Progresso do curso</span>
-                                    <span>{curso.progresso_percentual}%</span>
-                                  </div>
-                                  <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div
-                                      className="bg-blue-500 h-2 rounded-full"
-                                      style={{ width: `${curso.progresso_percentual}%` }}
-                                    />
-                                  </div>
-                                  <div className="flex gap-2 mt-2">
-                                    <button
-                                      onClick={() => handleAtualizarProgresso(curso.id_curso, 25)}
-                                      className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                                    >
-                                      25%
-                                    </button>
-                                    <button
-                                      onClick={() => handleAtualizarProgresso(curso.id_curso, 50)}
-                                      className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                                    >
-                                      50%
-                                    </button>
-                                    <button
-                                      onClick={() => handleAtualizarProgresso(curso.id_curso, 75)}
-                                      className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                                    >
-                                      75%
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row gap-2">
-                              <a
-                                href={curso.link_curso}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-4 py-2 text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors cursor-pointer text-center text-sm font-semibold"
-                              >
-                                Acessar Curso
-                              </a>
-
-                              {curso.status_curso === 'Pendente' && (
-                                <button
-                                  onClick={() => handleIniciarCurso(curso.id_curso)}
-                                  className="px-4 py-2 text-green-600 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors cursor-pointer text-sm font-semibold"
-                                >
-                                  Iniciar
-                                </button>
-                              )}
-
-                              {curso.status_curso === 'Em andamento' && (
-                                <button
-                                  onClick={() => handleConcluirCurso(curso.id_curso)}
-                                  className="px-4 py-2 text-green-600 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors cursor-pointer text-sm font-semibold"
-                                >
-                                  Concluir
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Resumo da Skill */}
-                    <div className="mt-6 p-4 bg-gray-50 rounded-xl">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                        <div>
-                          <div className="text-lg font-bold text-gray-800">
-                            {skill.cursos.filter(c => c.status_curso === 'Concluído').length}
-                          </div>
-                          <div className="text-sm text-gray-600">Concluídos</div>
-                        </div>
-                        <div>
-                          <div className="text-lg font-bold text-gray-800">
-                            {skill.cursos.filter(c => c.status_curso === 'Em andamento').length}
-                          </div>
-                          <div className="text-sm text-gray-600">Em andamento</div>
-                        </div>
-                        <div>
-                          <div className="text-lg font-bold text-gray-800">
-                            {skill.cursos.filter(c => c.status_curso === 'Pendente').length}
-                          </div>
-                          <div className="text-sm text-gray-600">Pendentes</div>
-                        </div>
-                        <div>
-                          <div className="text-lg font-bold text-gray-800">
-                            {skill.xp_skill}
-                          </div>
-                          <div className="text-sm text-gray-600">XP Disponível</div>
-                        </div>
+                          className={`h-2 rounded-full ${skill.concluida ? 'bg-green-500' : 'bg-blue-500'
+                            }`}
+                          style={{ width: `${skill.progresso_percentual}%` }}
+                        />
                       </div>
                     </div>
                   </div>
                 </div>
-              )}
+
+                {/* Cursos da Skill (expandido) */}
+                {skillExpandida === skill.id_skill && (
+                  <div className="border-t border-gray-200">
+                    <div className="p-6">
+                      <h4 className="text-lg font-semibold text-gray-800 mb-4">
+                        Cursos Recomendados ({skill.cursos.length})
+                      </h4>
+
+                      {skill.cursos.length > 0 ? (
+                        <div className="space-y-4">
+                          {skill.cursos.map((curso) => (
+                            <div
+                              key={curso.id_curso}
+                              className="border border-gray-200 rounded-xl p-4 hover:border-indigo-300 transition-colors duration-200"
+                            >
+                              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                                <div className="flex-1">
+                                  <div className="flex items-start gap-3 mb-2">
+                                    <div className="flex-1">
+                                      <h5 className="font-semibold text-gray-800 mb-1">
+                                        {curso.nome_curso}
+                                      </h5>
+                                      <div className="flex flex-wrap gap-3 text-sm text-gray-600 mb-2">
+                                        <span>🏢 {curso.plataforma}</span>
+                                        <span>⏱️ {curso.duracao_estimada_horas}h</span>
+                                        <span>📊 {curso.dificuldade}</span>
+                                      </div>
+                                    </div>
+                                    <span className={`px-3 py-1 text-sm font-semibold rounded-full border ${getStatusColor(curso.status_curso)}`}>
+                                      {curso.status_curso}
+                                    </span>
+                                  </div>
+
+                                  {curso.status_curso === 'Em andamento' && (
+                                    <div className="mb-3">
+                                      <div className="flex justify-between text-sm text-gray-600 mb-1">
+                                        <span>Progresso do curso</span>
+                                        <span>{curso.progresso_percentual}%</span>
+                                      </div>
+                                      <div className="w-full bg-gray-200 rounded-full h-2">
+                                        <div
+                                          className="bg-blue-500 h-2 rounded-full"
+                                          style={{ width: `${curso.progresso_percentual}%` }}
+                                        />
+                                      </div>
+                                      <div className="flex gap-2 mt-2">
+                                        <button
+                                          onClick={() => handleAtualizarProgresso(curso.id_curso, 25)}
+                                          className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                                        >
+                                          25%
+                                        </button>
+                                        <button
+                                          onClick={() => handleAtualizarProgresso(curso.id_curso, 50)}
+                                          className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                                        >
+                                          50%
+                                        </button>
+                                        <button
+                                          onClick={() => handleAtualizarProgresso(curso.id_curso, 75)}
+                                          className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                                        >
+                                          75%
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                  <a
+                                    href={curso.link_curso}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-4 py-2 text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors cursor-pointer text-center text-sm font-semibold"
+                                  >
+                                    Acessar Curso
+                                  </a>
+
+                                  {curso.status_curso === 'Pendente' && (
+                                    <button
+                                      onClick={() => handleIniciarCurso(curso.id_curso)}
+                                      className="px-4 py-2 text-green-600 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors cursor-pointer text-sm font-semibold"
+                                    >
+                                      Iniciar
+                                    </button>
+                                  )}
+
+                                  {curso.status_curso === 'Em andamento' && (
+                                    <button
+                                      onClick={() => handleConcluirCurso(curso.id_curso)}
+                                      className="px-4 py-2 text-green-600 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors cursor-pointer text-sm font-semibold"
+                                    >
+                                      Concluir
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <div className="text-4xl mb-2">📚</div>
+                          <p className="text-gray-600">Nenhum curso disponível para esta skill</p>
+                          <p className="text-sm text-gray-500 mt-1">Em breve adicionaremos cursos para esta habilidade</p>
+                        </div>
+                      )}
+
+                      {/* Resumo da Skill */}
+                      <div className="mt-6 p-4 bg-gray-50 rounded-xl">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                          <div>
+                            <div className="text-lg font-bold text-gray-800">
+                              {skill.cursos.filter(c => c.status_curso === 'Concluído').length}
+                            </div>
+                            <div className="text-sm text-gray-600">Concluídos</div>
+                          </div>
+                          <div>
+                            <div className="text-lg font-bold text-gray-800">
+                              {skill.cursos.filter(c => c.status_curso === 'Em andamento').length}
+                            </div>
+                            <div className="text-sm text-gray-600">Em andamento</div>
+                          </div>
+                          <div>
+                            <div className="text-lg font-bold text-gray-800">
+                              {skill.cursos.filter(c => c.status_curso === 'Pendente').length}
+                            </div>
+                            <div className="text-sm text-gray-600">Pendentes</div>
+                          </div>
+                          <div>
+                            <div className="text-lg font-bold text-gray-800">
+                              {skill.xp_skill}
+                            </div>
+                            <div className="text-sm text-gray-600">XP Disponível</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="bg-white rounded-2xl shadow-2xl p-8 text-center">
+              <div className="text-6xl mb-4">🎯</div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                Nenhuma Skill Encontrada
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Esta carreira ainda não possui skills cadastradas.
+              </p>
+              <button
+                onClick={handleVoltar}
+                className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors cursor-pointer"
+              >
+                Voltar ao Dashboard
+              </button>
             </div>
-          ))}
+          )}
         </div>
 
         {/* Informações Adicionais */}
-        <div className="mt-8 bg-white rounded-2xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            💡 Dicas para sua Jornada
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-            <div className="flex items-start gap-2">
-              <span className="text-green-500 mt-0.5">✓</span>
-              <span>Siga a ordem recomendada para um aprendizado progressivo</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="text-green-500 mt-0.5">✓</span>
-              <span>Conclua os cursos para ganhar XP e subir no ranking</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="text-green-500 mt-0.5">✓</span>
-              <span>Pratique os conceitos aprendidos em projetos pessoais</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="text-green-500 mt-0.5">✓</span>
-              <span>Mantenha consistência - mesmo 30 minutos por dia fazem diferença</span>
+        {skills.length > 0 && (
+          <div className="mt-8 bg-white rounded-2xl shadow-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              💡 Dicas para sua Jornada
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+              <div className="flex items-start gap-2">
+                <span className="text-green-500 mt-0.5">✓</span>
+                <span>Siga a ordem recomendada para um aprendizado progressivo</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-green-500 mt-0.5">✓</span>
+                <span>Conclua os cursos para ganhar XP e subir no ranking</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-green-500 mt-0.5">✓</span>
+                <span>Pratique os conceitos aprendidos em projetos pessoais</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-green-500 mt-0.5">✓</span>
+                <span>Mantenha consistência - mesmo 30 minutos por dia fazem diferença</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

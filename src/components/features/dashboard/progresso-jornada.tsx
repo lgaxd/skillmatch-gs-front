@@ -42,8 +42,8 @@ export const ProgressoJornada: React.FC<ProgressoJornadaProps> = ({
       </div>
 
       <div className="mb-6">
-        <ProgressBar 
-          value={carreira.progresso}
+        <ProgressBar
+          value={carreira.progresso} // Usar progresso da carreira, não do dashboard
           label="Progresso Geral"
           showLabel
           size="md"
@@ -60,7 +60,7 @@ export const ProgressoJornada: React.FC<ProgressoJornadaProps> = ({
         <div className="text-center p-4 bg-green-50 rounded-lg">
           <div className="text-2xl font-bold text-green-600">{progressoCursos.cursos_andamento}</div>
           <div className="text-sm text-green-800">Cursos em Andamento</div>
-          <div className="text-xs text-green-600">de {progressoCursos.total_cursos}</div>
+          <div className="text-xs text-green-600">de {progressoCursos.total_cursos - progressoCursos.cursos_concluidos + " restantes"}</div>
         </div>
       </div>
 

@@ -21,6 +21,7 @@ interface Estatisticas {
 
 export function Perfil() {
   const navigate = useNavigate();
+  const emailUsuario = authService.getCurrentUser()?.email || '';
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [usuario, setUsuario] = useState<User | null>(null);
@@ -303,7 +304,7 @@ export function Perfil() {
                       <label className="block text-sm font-medium text-gray-600 mb-1">
                         E-mail
                       </label>
-                      <p className="text-gray-800 font-semibold">{usuario.email || 'Não informado'}</p>
+                      <p className="text-gray-800 font-semibold">{emailUsuario || 'Não informado'}</p>
                     </div>
                   </div>
                 </div>

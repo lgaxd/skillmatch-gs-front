@@ -1,10 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { BackgroundPrincipal } from "../components/background-principal";
-import BotaoPersonalizado from "../components/ui/buttons/botao-personalizado";
 import { Loading } from "../components/ui/feedback/loading";
 import { InputPersonalizado } from "../components/ui/forms/input-personalizado";
 import { SelectPersonalizado } from "../components/ui/forms/select-personalizado";
+import { apiService } from "../services/api";
+import { authService } from "../services/auth";
 
 interface Usuario {
   id_usuario: number;
@@ -44,36 +45,6 @@ export function Perfil() {
   const [estatisticas, setEstatisticas] = useState<Estatisticas | null>(null);
   const [formData, setFormData] = useState<Partial<Usuario>>({});
 
-  // Dados mockados baseados no seu schema
-  const usuarioMock: Usuario = {
-    id_usuario: 1,
-    nome_usuario: "João Silva",
-    email_usuario: "joao.silva@email.com",
-    data_nascimento: "1990-05-15",
-    data_cadastro: "2024-01-15",
-    genero: "Masculino",
-    telefone: "(11) 99999-9999"
-  };
-
-  const carreiraMock: CarreiraUsuario = {
-    nome_carreira: "Desenvolvedor Front-end",
-    area_atuacao: "Programação",
-    progresso_percentual: 25.50,
-    xp_total: 1250,
-    data_inicio: "2024-01-15",
-    status_jornada: "Em Andamento"
-  };
-
-  const estatisticasMock: Estatisticas = {
-    cursos_concluidos: 2,
-    cursos_andamento: 1,
-    total_cursos: 10,
-    skills_completas: 3,
-    total_skills: 12,
-    tempo_total_estudo: 45,
-    dias_consecutivos: 12
-  };
-
   const generos = [
     { value: "masculino", label: "Masculino" },
     { value: "feminino", label: "Feminino" },
@@ -85,12 +56,65 @@ export function Perfil() {
     const carregarPerfil = async () => {
       setIsLoading(true);
       try {
+        const userId = authService.getCurrentUserId();
+        
+        // Carregar dados do usuário
+        const usuarioData = await apiService.getUser(userId);
+        setUsuario(usuarioData);
+        setFormData(usuarioData);
+
+        // Carregar carreira atual
+        const carreiraData = await apiService.getCarreiraAtual(userId);
+        setCarreira(carreiraData);
+
+        // Carregar estatísticas
+        const statsData = await apiService.getEstatisticas(userId);
+        setEstatisticas({
+          cursos_concluidos: statsData.totalCursosConcluidos || 0,
+          cursos_andamento: statsData.totalCursosIniciados || 0,
+          total_cursos: 10, // Valor fixo para exemplo
+          skills_completas: 3, // Valor fixo para exemplo
+          total_skills: 12, // Valor fixo para exemplo
+          tempo_total_estudo: 45, // Valor fixo para exemplo
+          dias_consecutivos: 12 // Valor fixo para exemplo
+        });
+
+      } catch (error) {
+        console.error("Erro ao carregar perfil:", error);
+        // Fallback com dados mockados
+        const usuarioMock: Usuario = {
+          id_usuario: 1,
+          nome_usuario: "João Silva",
+          email_usuario: "joao.silva@email.com",
+          data_nascimento: "1990-05-15",
+          data_cadastro: "2024-01-15",
+          genero: "Masculino",
+          telefone: "(11) 99999-9999"
+        };
+
+        const carreiraMock: CarreiraUsuario = {
+          nome_carreira: "Desenvolvedor Front-end",
+          area_atuacao: "Programação",
+          progresso_percentual: 25.50,
+          xp_total: 1250,
+          data_inicio: "2024-01-15",
+          status_jornada: "Em Andamento"
+        };
+
+        const estatisticasMock: Estatisticas = {
+          cursos_concluidos: 2,
+          cursos_andamento: 1,
+          total_cursos: 10,
+          skills_completas: 3,
+          total_skills: 12,
+          tempo_total_estudo: 45,
+          dias_consecutivos: 12
+        };
+
         setUsuario(usuarioMock);
         setCarreira(carreiraMock);
         setEstatisticas(estatisticasMock);
         setFormData(usuarioMock);
-      } catch (error) {
-        console.error("Erro ao carregar perfil:", error);
       } finally {
         setIsLoading(false);
       }
@@ -106,12 +130,15 @@ export function Perfil() {
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      // Simulação de salvamento
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const userId = authService.getCurrentUserId();
+      await apiService.updateUser(userId, formData);
       setUsuario(prev => prev ? { ...prev, ...formData } : null);
       setIsEditing(false);
     } catch (error) {
       console.error("Erro ao salvar perfil:", error);
+      // Em caso de erro, ainda atualiza localmente para desenvolvimento
+      setUsuario(prev => prev ? { ...prev, ...formData } : null);
+      setIsEditing(false);
     } finally {
       setIsLoading(false);
     }
@@ -128,10 +155,6 @@ export function Perfil() {
 
   const calcularNivel = (xp: number) => {
     return Math.floor(xp / 500) + 1;
-  };
-
-  const handleVoltar = () => {
-    navigate("/dashboard");
   };
 
   if (isLoading || !usuario || !carreira || !estatisticas) {
@@ -220,11 +243,13 @@ export function Perfil() {
                   </div>
                   
                   <div className="flex gap-3 pt-4">
-                    <BotaoPersonalizado
-                      texto="Salvar Alterações"
+                    <button
                       onClick={handleSave}
-                      className="flex-1"
-                    />
+                      disabled={isLoading}
+                      className="flex-1 px-6 py-3 text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    >
+                      {isLoading ? "Salvando..." : "Salvar Alterações"}
+                    </button>
                     <button
                       onClick={handleCancel}
                       className="px-6 py-3 text-gray-700 bg-gray-100 border border-gray-300 rounded-xl hover:bg-gray-200 transition-colors cursor-pointer"

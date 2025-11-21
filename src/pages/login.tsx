@@ -1,21 +1,35 @@
 import { useNavigate } from "react-router-dom";
 import { BackgroundPrincipal } from "../components/background-principal";
 import LoginForm from "../components/auth/login-form";
-import BotaoPersonalizado from "../components/ui/buttons/botao-personalizado";
+import { useAuth } from "../hooks/use-auth";
 
 export function LoginPage() {
     const navigate = useNavigate();
+    const { login } = useAuth();
+
+    const handleLogin = async (credentials: any) => {
+        try {
+            await login(credentials.email, credentials.password);
+            navigate("/dashboard");
+        } catch (error) {
+            console.error("Erro no login:", error);
+            alert("Email ou senha incorretos. Usando modo de desenvolvimento.");
+        }
+    };
 
     return (
-        <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6">
+        <div className="relative min-h-screen flex flex-col items-center justify-center px-6">
             <BackgroundPrincipal />
-            <h1 className="relative z-10 text-3xl font-bold mb-6 text-white">Página de Login</h1>
-            <LoginForm />
-            <BotaoPersonalizado
-                texto="Voltar para a página inicial"
-                onClick={() => navigate("/")}
-                className="mt-6"
-            />
+            <div className="relative z-10 w-full max-w-md">
+                <h1 className="text-3xl font-bold mb-6 text-white text-center">SkillMatch - Login</h1>
+                <LoginForm onSubmit={handleLogin} />
+                <button
+                    onClick={() => navigate("/")}
+                    className="mt-6 w-full px-6 py-3 text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors cursor-pointer"
+                >
+                    Voltar para a página inicial
+                </button>
+            </div>
         </div>
     );
 }

@@ -8,13 +8,15 @@ export interface ApiResponse<T> {
 
 export interface LoginRequest {
   email: string;
-  password: string;
+  senha: string; // Mudar de 'password' para 'senha' para match com backend
 }
 
 export interface LoginResponse {
-  token: string;
-  usuario: User;
+  id: number; // Mudar de string para number
+  nome: string;
+  email: string;
 }
+
 
 // Tipos para Carreiras
 export interface Carreira {

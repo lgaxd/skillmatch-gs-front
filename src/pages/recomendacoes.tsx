@@ -1,8 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BackgroundPrincipal } from "../components/background-principal";
-import BotaoPersonalizado from "../components/ui/buttons/botao-personalizado";
 import { Loading } from "../components/ui/feedback/loading";
+import { apiService } from "../services/api";
+import { authService } from "../services/auth";
 
 interface Carreira {
     id: string;
@@ -13,113 +14,81 @@ interface Carreira {
     salarioMedio: string;
     tempoPreparacao: string;
     skillsPrincipais: string[];
-    alinhamento: number; // 0-100%
+    alinhamento: number;
 }
 
 export function Recomendacoes() {
     const navigate = useNavigate();
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [carreiraSelecionada, setCarreiraSelecionada] = useState<string | null>(null);
+    const [carreiras, setCarreiras] = useState<Carreira[]>([]);
 
-    // Dados mockados - serão substituídos pela API futuramente
-    const carreirasMock: Carreira[] = [
-        {
-            id: "1",
-            nome: "Cientista de Dados",
-            area: "Tecnologia",
-            demanda: "alta",
-            descricao: "Profissional responsável por analisar e interpretar dados complexos para auxiliar na tomada de decisões estratégicas. Combina conhecimentos em estatística, programação e negócios.",
-            salarioMedio: "R$ 8.000 - R$ 15.000",
-            tempoPreparacao: "6-12 meses",
-            skillsPrincipais: ["Python", "Machine Learning", "Estatística", "SQL", "Visualização de Dados"],
-            alinhamento: 92
-        },
-        {
-            id: "2",
-            nome: "Desenvolvedor Full Stack",
-            area: "Tecnologia",
-            demanda: "alta",
-            descricao: "Desenvolve tanto o front-end quanto o back-end de aplicações web. Trabalha com diversas tecnologias para criar soluções completas e escaláveis.",
-            salarioMedio: "R$ 6.000 - R$ 12.000",
-            tempoPreparacao: "8-14 meses",
-            skillsPrincipais: ["JavaScript", "React", "Node.js", "Banco de Dados", "APIs"],
-            alinhamento: 88
-        },
-        {
-            id: "3",
-            nome: "Product Manager",
-            area: "Tecnologia & Negócios",
-            demanda: "alta",
-            descricao: "Lidera o desenvolvimento de produtos digitais, atuando na interface entre negócios, tecnologia e usuários. Define a visão do produto e prioriza funcionalidades.",
-            salarioMedio: "R$ 12.000 - R$ 20.000",
-            tempoPreparacao: "12-18 meses",
-            skillsPrincipais: ["Gestão de Produto", "UX/UI", "Metodologias Ágeis", "Análise de Mercado", "Comunicação"],
-            alinhamento: 85
-        },
-        {
-            id: "4",
-            nome: "Especialista em Cybersecurity",
-            area: "Segurança da Informação",
-            demanda: "alta",
-            descricao: "Protege sistemas, redes e dados contra ameaças cibernéticas. Desenvolve estratégias de segurança e responde a incidentes de segurança.",
-            salarioMedio: "R$ 10.000 - R$ 18.000",
-            tempoPreparacao: "10-16 meses",
-            skillsPrincipais: ["Segurança de Redes", "Ethical Hacking", "Criptografia", "Gestão de Riscos", "Linux"],
-            alinhamento: 78
-        },
-        {
-            id: "5",
-            nome: "UX/UI Designer",
-            area: "Design & Tecnologia",
-            demanda: "media",
-            descricao: "Cria experiências digitais intuitivas e atraentes para os usuários. Combina design visual com pesquisa de usuário para desenvolver interfaces eficazes.",
-            salarioMedio: "R$ 5.000 - R$ 9.000",
-            tempoPreparacao: "6-10 meses",
-            skillsPrincipais: ["Figma", "Design Thinking", "Pesquisa com Usuários", "Prototipagem", "Design System"],
-            alinhamento: 75
-        }
-    ];
+    // Carregar recomendações ao montar o componente
+    useEffect(() => {
+        const carregarRecomendacoes = async () => {
+            setIsLoading(true);
+            try {
+                const recomendacoesSalvas = localStorage.getItem('recomendacoesKNN');
+                
+                if (recomendacoesSalvas) {
+                    const data = JSON.parse(recomendacoesSalvas);
+                    console.log("Dados das recomendações:", data);
+                    
+                    if (data.recomendacoes && Array.isArray(data.recomendacoes)) {
+                        // Converter recomendações da API para o formato do componente
+                        const carreirasFormatadas = data.recomendacoes.map((rec: any, index: number) => {
+                            const alinhamento = Math.max(70, 100 - (rec.distancia * 20));
+                            
+                            return {
+                                id: (index + 1).toString(),
+                                nome: rec.carreira,
+                                area: "Tecnologia",
+                                demanda: 'alta' as const,
+                                descricao: `Carreira altamente recomendada baseada no seu perfil. Nível de compatibilidade: ${alinhamento}%`,
+                                salarioMedio: "R$ 8.000 - R$ 15.000",
+                                tempoPreparacao: "6-12 meses",
+                                skillsPrincipais: ["Python", "Machine Learning", "Análise de Dados"],
+                                alinhamento: alinhamento
+                            };
+                        });
+                        
+                        setCarreiras(carreirasFormatadas);
+                    } else {
+                        // Estrutura inválida, usar mock
+                        setCarreiras(carreirasMock);
+                    }
+                } else {
+                    // Sem recomendações salvas, usar mock
+                    setCarreiras(carreirasMock);
+                }
+            } catch (error) {
+                console.error("Erro ao carregar recomendações:", error);
+                setCarreiras(carreirasMock);
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
-    const [carreiras, setCarreiras] = useState<Carreira[]>(carreirasMock);
-
-    // Função para buscar recomendações da API (mockada por enquanto)
-    const buscarRecomendacoes = async () => {
-        setIsLoading(true);
-        try {
-            // Simulação de chamada à API
-            await new Promise(resolve => setTimeout(resolve, 2000));
-
-            // Aqui viria a chamada real para a API
-            // const response = await fetch('/api/recomendacoes');
-            // const data = await response.json();
-            // setCarreiras(data);
-
-            console.log("Buscando recomendações da API...");
-        } catch (error) {
-            console.error("Erro ao buscar recomendações:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+        carregarRecomendacoes();
+    }, []);
 
     const handleSelecionarCarreira = async (carreiraId: string) => {
         setIsLoading(true);
         setCarreiraSelecionada(carreiraId);
 
         try {
-            // Simulação de processamento
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            const userId = authService.getCurrentUserId();
+            
+            // Tentar salvar no backend
+            try {
+                await apiService.selectCarreira(userId, parseInt(carreiraId));
+                console.log("Carreira selecionada no backend:", carreiraId);
+            } catch (error) {
+                console.error("Erro ao salvar carreira no backend:", error);
+                // Continuar mesmo com erro
+            }
 
-            // Aqui viria a chamada para salvar a carreira selecionada
-            // await fetch('/api/selecionar-carreira', {
-            //   method: 'POST',
-            //   body: JSON.stringify({ carreiraId }),
-            //   headers: { 'Content-Type': 'application/json' }
-            // });
-
-            console.log("Carreira selecionada:", carreiraId);
-
-            // Redireciona para o dashboard da carreira
+            // Redireciona para o dashboard
             navigate("/dashboard");
         } catch (error) {
             console.error("Erro ao selecionar carreira:", error);
@@ -130,6 +99,42 @@ export function Recomendacoes() {
 
     const handleVoltar = () => {
         navigate("/formulario-perfil");
+    };
+
+    const buscarRecomendacoes = async () => {
+        setIsLoading(true);
+        try {
+            // Buscar perfil do localStorage
+            const perfilSalvo = localStorage.getItem('perfilUsuario');
+            if (perfilSalvo) {
+                const perfil = JSON.parse(perfilSalvo);
+                
+                // Re-processar perfil
+                const skillsParaKNN = {
+                    Engenharia_Software: parseInt(perfil.interessesTecnologia) || 5,
+                    Analise_Dados: parseInt(perfil.habilidadesAnalise) || 5,
+                    Gestao_Projetos: parseInt(perfil.habilidadesLideranca) || 5,
+                    Design_UX: parseInt(perfil.interessesCriatividade) || 5,
+                    Comunicacao: parseInt(perfil.habilidadesComunicacao) || 5,
+                    Marketing_Digital: 5,
+                    Pensamento_Critico: parseInt(perfil.habilidadesAnalise) || 5,
+                    Lideranca: parseInt(perfil.habilidadesLideranca) || 5,
+                    Negociacao: parseInt(perfil.habilidadesComunicacao) || 5,
+                    Financas: 5,
+                    Criatividade: parseInt(perfil.interessesCriatividade) || 5
+                };
+
+                const recomendacoes = await apiService.getRecomendacoesKNN(skillsParaKNN);
+                localStorage.setItem('recomendacoesKNN', JSON.stringify(recomendacoes));
+                
+                // Recarregar a página
+                window.location.reload();
+            }
+        } catch (error) {
+            console.error("Erro ao buscar recomendações:", error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const getDemandaColor = (demanda: string) => {
@@ -156,11 +161,6 @@ export function Recomendacoes() {
         if (alinhamento >= 70) return 'text-yellow-600';
         return 'text-gray-600';
     };
-
-    // Buscar recomendações ao carregar a página
-    useState(() => {
-        buscarRecomendacoes();
-    });
 
     if (isLoading && carreiras.length === 0) {
         return (
@@ -286,15 +286,17 @@ export function Recomendacoes() {
                                 </div>
 
                                 {/* Botão de Seleção */}
-                                <BotaoPersonalizado
-                                    texto={
-                                        isLoading && carreiraSelecionada === carreira.id
-                                            ? "Selecionando..."
-                                            : "Selecionar Esta Carreira"
-                                    }
+                                <button
                                     onClick={() => handleSelecionarCarreira(carreira.id)}
-                                    className="w-full"
-                                />
+                                    disabled={isLoading && carreiraSelecionada === carreira.id}
+                                    className={`w-full px-6 py-3 text-white bg-indigo-600 rounded-xl font-semibold transition-all duration-300 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transform hover:scale-[1.02] ${
+                                        isLoading && carreiraSelecionada === carreira.id ? 'opacity-50 cursor-not-allowed' : ''
+                                    }`}
+                                >
+                                    {isLoading && carreiraSelecionada === carreira.id
+                                        ? "Selecionando..."
+                                        : "Selecionar Esta Carreira"}
+                                </button>
                             </div>
                         </div>
                     ))}
@@ -344,3 +346,40 @@ export function Recomendacoes() {
         </div>
     );
 }
+
+// Dados mockados de fallback
+const carreirasMock: Carreira[] = [
+    {
+        id: "1",
+        nome: "Cientista de Dados",
+        area: "Tecnologia",
+        demanda: "alta",
+        descricao: "Profissional responsável por analisar e interpretar dados complexos para auxiliar na tomada de decisões estratégicas. Combina conhecimentos em estatística, programação e negócios.",
+        salarioMedio: "R$ 8.000 - R$ 15.000",
+        tempoPreparacao: "6-12 meses",
+        skillsPrincipais: ["Python", "Machine Learning", "Estatística", "SQL", "Visualização de Dados"],
+        alinhamento: 92
+    },
+    {
+        id: "2",
+        nome: "Desenvolvedor Full Stack",
+        area: "Tecnologia",
+        demanda: "alta",
+        descricao: "Desenvolve tanto o front-end quanto o back-end de aplicações web. Trabalha com diversas tecnologias para criar soluções completas e escaláveis.",
+        salarioMedio: "R$ 6.000 - R$ 12.000",
+        tempoPreparacao: "8-14 meses",
+        skillsPrincipais: ["JavaScript", "React", "Node.js", "Banco de Dados", "APIs"],
+        alinhamento: 88
+    },
+    {
+        id: "3",
+        nome: "Product Manager",
+        area: "Tecnologia & Negócios",
+        demanda: "alta",
+        descricao: "Lidera o desenvolvimento de produtos digitais, atuando na interface entre negócios, tecnologia e usuários. Define a visão do produto e prioriza funcionalidades.",
+        salarioMedio: "R$ 12.000 - R$ 20.000",
+        tempoPreparacao: "12-18 meses",
+        skillsPrincipais: ["Gestão de Produto", "UX/UI", "Metodologias Ágeis", "Análise de Mercado", "Comunicação"],
+        alinhamento: 85
+    }
+];

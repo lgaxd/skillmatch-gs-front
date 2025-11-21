@@ -1,10 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { BackgroundPrincipal } from "../components/background-principal";
-import BotaoPersonalizado from "../components/ui/buttons/botao-personalizado";
 import { InputPersonalizado } from "../components/ui/forms/input-personalizado";
 import { SelectPersonalizado } from "../components/ui/forms/select-personalizado";
 import { PasswordStrength } from "../components/ui/forms/password-strength";
+import { authService } from "../services/auth";
 
 interface FormData {
   nomeCompleto: string;
@@ -68,7 +68,6 @@ export function Cadastro() {
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    // Validações básicas
     if (!formData.nomeCompleto.trim()) {
       newErrors.nomeCompleto = "Nome completo é obrigatório";
     }
@@ -100,7 +99,6 @@ export function Cadastro() {
       ...prev,
       [field]: value
     }));
-    // Remove erro do campo quando usuário começar a digitar
     if (errors[field]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -120,13 +118,21 @@ export function Cadastro() {
     setIsLoading(true);
 
     try {
-      // Simulação de chamada API
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Preparar dados para o backend
+      const userData = {
+        nome: formData.nomeCompleto,
+        email: formData.email,
+        senha: formData.senha,
+        dataNascimento: formData.dataNascimento
+      };
+
+      // Chamar serviço de autenticação
+      await authService.register(userData);
       
-      // Aqui você faria a chamada real para a API
-      console.log("Dados do cadastro:", formData);
+      // Fazer login automático após cadastro
+      await authService.login({ email: formData.email, password: formData.senha });
       
-      // Redireciona para a página de perfil ou dashboard após cadastro
+      // Redireciona para o formulário de perfil
       navigate("/formulario-perfil");
     } catch (error) {
       console.error("Erro no cadastro:", error);
@@ -269,11 +275,13 @@ export function Cadastro() {
 
             {/* Botões */}
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <BotaoPersonalizado
-                texto={isLoading ? "Cadastrando..." : "Criar minha conta"}
-                onClick={() => {}} // Submit é feito pelo form
-                className="flex-1"
-              />
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="flex-1 px-8 py-3 text-lg font-semibold text-white bg-indigo-600 border border-transparent rounded-xl hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              >
+                {isLoading ? "Cadastrando..." : "Criar minha conta"}
+              </button>
               
               <button
                 type="button"

@@ -146,6 +146,19 @@ class ApiService {
     });
   }
 
+  async adicionarTodosUsuariosAoRanking(mes: string): Promise<void> {
+    return this.request<void>(`/usuarios/ranking/adicionar-todos`, {
+      method: 'POST',
+      body: JSON.stringify({ mesReferencia: mes }),
+    });
+  }
+
+  async atualizarRankingTodosUsuarios(): Promise<void> {
+    return this.request<void>(`/usuarios/ranking/atualizar-mes-atual`, {
+      method: 'PUT'
+    });
+  }
+
   // Dashboard & Estatísticas
   async getDashboard(userId: number): Promise<DashboardData> {
     return this.request<DashboardData>(`/usuarios/${userId}/dashboard`);
@@ -153,39 +166,6 @@ class ApiService {
 
   async getEstatisticas(userId: number): Promise<Estatisticas> {
     return this.request<Estatisticas>(`/usuarios/${userId}/estatisticas`);
-  }
-
-  // API Python Flask (Machine Learning)
-  async getRecomendacoesKNN(perfil: any): Promise<any> {
-    const FLASK_API_URL = 'http://localhost:5000';
-
-    try {
-      const response = await fetch(`${FLASK_API_URL}/recomendar`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ skills: perfil }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return response.json();
-    } catch (error) {
-      console.error('Erro na API Flask, retornando mock:', error);
-      return {
-        perfil_enviado: perfil,
-        recomendacoes: [
-          { rank: 1, carreira: "Cientista de Dados", distancia: 0.5 },
-          { rank: 2, carreira: "Engenheiro de Machine Learning", distancia: 0.7 },
-          { rank: 3, carreira: "Analista de BI", distancia: 0.8 },
-          { rank: 4, carreira: "Engenheiro de Dados", distancia: 0.9 },
-          { rank: 5, carreira: "Arquiteto de Cloud", distancia: 1.0 }
-        ]
-      };
-    }
   }
 }
 

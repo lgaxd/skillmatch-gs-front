@@ -1,7 +1,16 @@
+// src/hooks/use-dashboard.ts
 import { useState, useEffect } from 'react';
 import { apiService } from '../services/api';
 import { authService } from '../services/auth';
 import type { DashboardCompleto } from '../types/api';
+
+// Função auxiliar para obter mês de referência
+const getMesReferenciaAtual = (): string => {
+  const now = new Date();
+  const ano = now.getFullYear();
+  const mes = (now.getMonth() + 1).toString().padStart(2, '0');
+  return `${ano}-${mes}`;
+};
 
 export const useDashboard = () => {
   const [dashboardCompleto, setDashboardCompleto] = useState<DashboardCompleto | null>(null);
@@ -13,6 +22,15 @@ export const useDashboard = () => {
       console.log('🚀 Iniciando carregamento do dashboard...');
       setIsLoading(true);
       setError(null);
+
+      // Adicionar todos os usuários ao ranking do mês atual
+      const mesAtual = getMesReferenciaAtual();
+      await apiService.adicionarTodosUsuariosAoRanking(mesAtual);
+      console.log(`✅ Todos os usuários adicionados ao ranking de ${mesAtual}`);
+
+      // Atualizar o ranking de todos os usuários
+      await apiService.atualizarRankingTodosUsuarios();
+      console.log('✅ Ranking de todos os usuários atualizado');
       
       const userId = authService.getCurrentUserId();
       
@@ -22,19 +40,23 @@ export const useDashboard = () => {
 
       console.log(`📊 Buscando dados para usuário ${userId}...`);
 
+      const mesReferencia = getMesReferenciaAtual();
+
       // Carregar todos os dados em paralelo
       const [
         usuario,
         carreiraUsuario,
         dashboardData,
         estatisticas,
-        ranking
+        rankingUsuario,
+        rankingGeral
       ] = await Promise.all([
         apiService.getUser(userId),
-        apiService.getCarreiraAtual(userId).catch(() => null), // Pode não ter carreira
+        apiService.getCarreiraAtual(userId).catch(() => null),
         apiService.getDashboard(userId),
         apiService.getEstatisticas(userId).catch(() => ({ totalCursosIniciados: 0, totalCursosConcluidos: 0 })),
-        apiService.getRankingUsuario(userId).catch(() => null) // Pode não estar no ranking
+        apiService.getRankingUsuario(userId).catch(() => null),
+        apiService.getRanking(mesReferencia).catch(() => [])
       ]);
 
       console.log('✅ Dados carregados:', {
@@ -42,15 +64,24 @@ export const useDashboard = () => {
         carreiraUsuario,
         dashboardData,
         estatisticas,
-        ranking
+        rankingUsuario,
+        rankingGeralCount: rankingGeral.length
       });
+
+      // Processar top 3 do ranking
+      const top3Ranking = rankingGeral.slice(0, 3).map((item: any, index: number) => ({
+        posicao: index + 1,
+        nome: item.usuario?.nome || `Usuário ${index + 1}`,
+        pontuacao: item.pontuacao || 0
+      }));
 
       const dashboardCompleto: DashboardCompleto = {
         usuario,
         carreiraUsuario,
         dashboardData,
         estatisticas,
-        ranking
+        ranking: rankingUsuario,
+        top3Ranking
       };
 
       setDashboardCompleto(dashboardCompleto);
@@ -80,7 +111,8 @@ export const useDashboard = () => {
           totalCursosIniciados: 0,
           totalCursosConcluidos: 0
         },
-        ranking: null
+        ranking: null,
+        top3Ranking: []
       };
       setDashboardCompleto(fallbackData);
     } finally {

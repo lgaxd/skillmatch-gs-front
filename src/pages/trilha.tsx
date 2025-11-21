@@ -205,6 +205,13 @@ export function Trilha() {
 
         console.log(`📊 Progresso geral: ${progressoGeral}% (${skillsConcluidas}/${skillsComCursos.length} skills concluídas)`);
 
+        try {
+          await apiService.updateProgressoCarreira(userId, progressoGeral);
+          console.log(`✅ Progresso da carreira atualizado para ${progressoGeral.toFixed(2)}%`);
+        } catch (error) {
+          console.log("ℹ️ Progresso da carreira não atualizado, mas continuando...");
+        }
+
         setCarreira({
           id_carreira: carreiraId,
           nome_carreira: carreiraAtual.carreira.nome,
@@ -324,6 +331,8 @@ export function Trilha() {
             skill.cursos.every(curso => curso.status_curso === 'Concluído')
           ).length;
           const progressoGeral = skills.length > 0 ? (skillsConcluidas / skills.length) * 100 : 0;
+
+
 
           // Calcular nova XP (adiciona XP calculado por curso concluído)
           const novaXP = carreira.xp_total + xpPorCurso;

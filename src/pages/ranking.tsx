@@ -27,7 +27,7 @@ export function Ranking() {
   const [isLoading, setIsLoading] = useState(true);
   const [rankingGeral, setRankingGeral] = useState<UsuarioRanking[]>([]);
   const [meuRanking, setMeuRanking] = useState<RankingUsuario | null>(null);
-  const [mesSelecionado, setMesSelecionado] = useState('2024-01');
+  const [mesSelecionado, setMesSelecionado] = useState('2025-11');
 
   // Dados mockados baseados no seu schema - TB_RANKING + TB_USUARIO + TB_USUARIO_CARREIRA + TB_CARREIRA
   const rankingMock: UsuarioRanking[] = [
@@ -130,6 +130,7 @@ export function Ranking() {
   };
 
   const mesesDisponiveis = [
+    { value: '2025-11', label: 'Novembro 2025' },
     { value: '2024-01', label: 'Janeiro 2024' },
     { value: '2023-12', label: 'Dezembro 2023' },
     { value: '2023-11', label: 'Novembro 2023' }
@@ -270,7 +271,7 @@ export function Ranking() {
                   <h2 className="text-2xl font-bold text-white">
                     Top 10 - {mesesDisponiveis.find(m => m.value === mesSelecionado)?.label}
                   </h2>
-                  <div className="text-white text-sm bg-white bg-opacity-20 px-3 py-1 rounded-full">
+                  <div className="text-black text-sm bg-white bg-opacity-20 px-3 py-1 rounded-full">
                     {rankingGeral.length} competidores
                   </div>
                 </div>

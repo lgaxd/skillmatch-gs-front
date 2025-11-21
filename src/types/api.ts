@@ -76,6 +76,11 @@ export interface DashboardCompleto {
   dashboardData: DashboardData;
   estatisticas: Estatisticas;
   ranking: Ranking | null;
+  top3Ranking?: Array<{ // Adicionar esta propriedade
+    posicao: number;
+    nome: string;
+    pontuacao: number;
+  }>;
 }
 
 export interface LoginRequest {

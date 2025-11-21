@@ -86,6 +86,13 @@ class ApiService {
     });
   }
 
+  async updateProgressoCarreira(userId: number, percentual: number): Promise<void> {
+    return this.request<void>(`/usuarios/${userId}/carreira/atualizar-progresso`, {
+      method: 'PUT',
+      body: JSON.stringify({ percentual }),
+    });
+  }
+
   async getCarreiraAtual(userId: number): Promise<CarreiraUsuario> {
     return this.request<CarreiraUsuario>(`/usuarios/${userId}/carreira-atual`);
   }

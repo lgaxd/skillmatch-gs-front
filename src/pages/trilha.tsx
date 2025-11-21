@@ -266,74 +266,89 @@ export function Trilha() {
     }
   };
 
-  const handleConcluirCurso = async (cursoId: number) => {
+  const handleConcluirCurso = async (cursoId: number, skillId: number) => {
     try {
       const userId = authService.getCurrentUserId();
       await apiService.concluirCurso(cursoId, userId);
 
-      // Adicionar XP ao concluir curso
-      try {
-        await apiService.addXP(userId, 100);
-      } catch (xpError) {
-        console.log("ℹ️ XP não adicionado, mas continuando...");
-      }
+      // 🔥 NOVA LÓGICA: Calcular XP baseado na skill
+      const skill = skills.find(s => s.id_skill === skillId);
+      if (skill) {
+        // Calcular XP por curso: XP total da skill dividido pelo número de cursos
+        const xpPorCurso = Math.floor(skill.xp_skill / skill.cursos.length);
 
-      // Atualização local
-      setSkills(prevSkills =>
-        prevSkills.map(skill => ({
-          ...skill,
-          cursos: skill.cursos.map(curso =>
-            curso.id_curso === cursoId
-              ? { ...curso, status_curso: 'Concluído', progresso_percentual: 100 }
-              : curso
+        console.log(`🎯 Adicionando ${xpPorCurso} XP (${skill.xp_skill} XP da skill ÷ ${skill.cursos.length} cursos)`);
+
+        try {
+          await apiService.addXP(userId, xpPorCurso);
+        } catch (xpError) {
+          console.log("ℹ️ XP não adicionado, mas continuando...");
+        }
+
+        // Atualização local
+        setSkills(prevSkills =>
+          prevSkills.map(skill =>
+            skill.id_skill === skillId
+              ? {
+                ...skill,
+                cursos: skill.cursos.map(curso =>
+                  curso.id_curso === cursoId
+                    ? { ...curso, status_curso: 'Concluído', progresso_percentual: 100 }
+                    : curso
+                )
+              }
+              : skill
           )
-        }))
-      );
-
-      // Recalcular progresso da skill
-      setSkills(prevSkills =>
-        prevSkills.map(skill => {
-          const cursosDaSkill = skill.cursos;
-          const cursosConcluidos = cursosDaSkill.filter(c => c.status_curso === 'Concluído').length;
-          const progressoSkill = cursosDaSkill.length > 0 ? (cursosConcluidos / cursosDaSkill.length) * 100 : 0;
-
-          return {
-            ...skill,
-            progresso_percentual: progressoSkill,
-            concluida: progressoSkill === 100
-          };
-        })
-      );
-
-      // Atualizar progresso geral da carreira
-      if (carreira) {
-        const skillsConcluidas = skills.filter(skill =>
-          skill.cursos.every(curso => curso.status_curso === 'Concluído')
-        ).length;
-        const progressoGeral = skills.length > 0 ? (skillsConcluidas / skills.length) * 100 : 0;
-
-        // Calcular nova XP (adiciona 100 XP por curso concluído)
-        const novaXP = carreira.xp_total + 100;
-
-        // Calcular cursos concluídos
-        const totalCursosConcluidos = skills.reduce((total, skill) =>
-          total + skill.cursos.filter(c => c.status_curso === 'Concluído').length, 0
         );
 
-        setCarreira(prev => prev ? {
-          ...prev,
-          progresso_geral: progressoGeral,
-          skills_concluidas: skillsConcluidas,
-          xp_total: novaXP
-        } : null);
+        // Recalcular progresso da skill
+        setSkills(prevSkills =>
+          prevSkills.map(skill => {
+            if (skill.id_skill !== skillId) return skill;
 
-        // 🔥 ATUALIZAR O DASHBOARD COM O NOVO PROGRESSO
-        if (atualizarProgresso) {
-          atualizarProgresso(progressoGeral, novaXP, totalCursosConcluidos);
+            const cursosDaSkill = skill.cursos;
+            const cursosConcluidos = cursosDaSkill.filter(c => c.status_curso === 'Concluído').length;
+            const progressoSkill = cursosDaSkill.length > 0 ? (cursosConcluidos / cursosDaSkill.length) * 100 : 0;
+
+            return {
+              ...skill,
+              progresso_percentual: progressoSkill,
+              concluida: progressoSkill === 100
+            };
+          })
+        );
+
+        // Atualizar progresso geral da carreira
+        if (carreira) {
+          const skillsConcluidas = skills.filter(skill =>
+            skill.cursos.every(curso => curso.status_curso === 'Concluído')
+          ).length;
+          const progressoGeral = skills.length > 0 ? (skillsConcluidas / skills.length) * 100 : 0;
+
+          // Calcular nova XP (adiciona XP calculado por curso concluído)
+          const novaXP = carreira.xp_total + xpPorCurso;
+
+          // Calcular cursos concluídos
+          const totalCursosConcluidos = skills.reduce((total, skill) =>
+            total + skill.cursos.filter(c => c.status_curso === 'Concluído').length, 0
+          );
+
+          setCarreira(prev => prev ? {
+            ...prev,
+            progresso_geral: progressoGeral,
+            skills_concluidas: skillsConcluidas,
+            xp_total: novaXP
+          } : null);
+
+          // 🔥 ATUALIZAR O DASHBOARD COM O NOVO PROGRESSO
+          if (atualizarProgresso) {
+            atualizarProgresso(progressoGeral, novaXP, totalCursosConcluidos);
+          }
         }
+
+        console.log(`✅ Curso ${cursoId} marcado como concluído (+${xpPorCurso} XP)`);
       }
 
-      console.log(`✅ Curso ${cursoId} marcado como concluído`);
     } catch (error) {
       console.error("❌ Erro ao concluir curso:", error);
       alert("Erro ao concluir curso. Tente novamente.");
@@ -640,7 +655,7 @@ export function Trilha() {
 
                                   {curso.status_curso === 'Em andamento' && (
                                     <button
-                                      onClick={() => handleConcluirCurso(curso.id_curso)}
+                                      onClick={() => handleConcluirCurso(curso.id_curso, skill.id_skill)}
                                       className="px-4 py-2 text-green-600 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors cursor-pointer text-sm font-semibold"
                                     >
                                       Concluir

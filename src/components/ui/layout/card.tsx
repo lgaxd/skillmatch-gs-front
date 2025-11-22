@@ -1,4 +1,5 @@
 import React from 'react';
+import { useThemeClasses } from '../../../hooks/use-theme-classes';
 
 interface CardProps {
     children: React.ReactNode;
@@ -13,6 +14,7 @@ export const Card: React.FC<CardProps> = ({
     padding = 'md',
     hover = false
 }) => {
+    const themeClasses = useThemeClasses();
     const paddingClasses = {
         sm: 'p-4',
         md: 'p-6',
@@ -21,11 +23,11 @@ export const Card: React.FC<CardProps> = ({
 
     return (
         <div className={`
-      bg-white rounded-2xl shadow-lg
-      ${paddingClasses[padding]}
-      ${hover ? 'hover:shadow-xl transition-shadow duration-200' : ''}
-      ${className}
-    `}>
+            ${themeClasses.card} rounded-2xl shadow-lg border ${themeClasses.border}
+            ${paddingClasses[padding]}
+            ${hover ? 'hover:shadow-xl transition-shadow duration-200' : ''}
+            ${className}
+        `}>
             {children}
         </div>
     );

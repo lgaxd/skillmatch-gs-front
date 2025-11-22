@@ -1,4 +1,5 @@
 import React from 'react';
+import { useThemeClasses } from '../../../hooks/use-theme-classes';
 
 interface ProgressBarProps {
   value: number;
@@ -17,6 +18,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   size = 'md',
   color = 'indigo'
 }) => {
+  const themeClasses = useThemeClasses();
   const percentage = Math.min((value / max) * 100, 100);
   
   const sizeClasses = {
@@ -36,12 +38,12 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   return (
     <div>
       {showLabel && (
-        <div className="flex justify-between text-sm text-gray-600 mb-1">
+        <div className={`flex justify-between text-sm ${themeClasses.text.secondary} mb-1`}>
           <span>{label || `${Math.round(percentage)}%`}</span>
           <span>{max}</span>
         </div>
       )}
-      <div className={`w-full bg-gray-200 rounded-full ${sizeClasses[size]}`}>
+      <div className={`w-full bg-gray-200 dark:bg-gray-700 rounded-full ${sizeClasses[size]}`}>
         <div
           className={`${colorClasses[color]} ${sizeClasses[size]} rounded-full transition-all duration-500`}
           style={{ width: `${percentage}%` }}

@@ -10,6 +10,7 @@ import { useDashboard } from "../hooks/use-dashboard";
 import { calcularNivel, calcularProgressoNivel } from "../utils/calculations";
 import { ProgressBar } from "../components/ui/layout/progress-bar";
 import type { CarreiraUsuario, DashboardData } from '../types/api';
+import { useThemeClasses } from "../hooks/use-theme-classes";
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -194,10 +195,11 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   onVerPerfil,
   onTrocarCarreira
 }) => {
+  const themeClasses = useThemeClasses();
+
   const nomeUsuario = usuario?.nome || 'Usuário';
   const nomeCarreira = carreira?.carreira.nome || dashboardData.carreiraAtual || 'Nenhuma carreira selecionada';
 
-  // Usar o progresso da carreira se disponível, senão usar do dashboardData
   const progresso = carreira?.progresso || dashboardData.progressoCarreira || 0;
   const xpTotal = carreira?.xp || dashboardData.xpTotal || 0;
 
@@ -207,10 +209,10 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   return (
     <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
       <div className="flex-1">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+        <h1 className={`text-3xl font-bold ${themeClasses.text.primary} mb-2`}>
           Bem-vindo de volta, {nomeUsuario}! 👋
         </h1>
-        <p className="text-gray-600 mb-4">
+        <p className={`${themeClasses.text.secondary} mb-4`}>
           {carreira ? (
             <>Continue sua jornada em <strong>{nomeCarreira}</strong></>
           ) : (
@@ -221,12 +223,12 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         {carreira && (
           <div className="flex items-center gap-6">
             <div className="text-center">
-              <div className="text-2xl font-bold text-indigo-600">Nível {nivelAtual}</div>
-              <div className="text-sm text-gray-500">Seu nível</div>
+              <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">Nível {nivelAtual}</div>
+              <div className={`text-sm ${themeClasses.text.secondary}`}>Seu nível</div>
             </div>
             <div className="flex-1">
               <ProgressBar value={progressoNivel} label={`${xpTotal} XP`} />
-              <div className="flex justify-between text-sm text-gray-600 mt-1">
+              <div className={`flex justify-between text-sm ${themeClasses.text.secondary} mt-1`}>
                 <span>Progresso da Jornada: {progresso}%</span>
                 <span>{xpTotal} XP</span>
               </div>
@@ -238,7 +240,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
       <div className="flex flex-col sm:flex-row gap-3">
         <button
           onClick={onVerPerfil}
-          className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+          className={`px-4 py-2 ${themeClasses.button.secondary} rounded-lg transition-colors cursor-pointer`}
         >
           Meu Perfil
         </button>
@@ -246,14 +248,14 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         {carreira ? (
           <button
             onClick={onTrocarCarreira}
-            className="px-4 py-2 text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors cursor-pointer"
+            className="px-4 py-2 text-white dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-600 border border-indigo-200 dark:border-indigo-700 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-colors cursor-pointer"
           >
             Trocar Carreira
           </button>
         ) : (
           <button
             onClick={onTrocarCarreira}
-            className="px-4 py-2 text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors cursor-pointer"
+            className="px-4 py-2 text-green-700 dark:text-white bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 rounded-lg hover:bg-green-100 dark:hover:bg-green-800 transition-colors cursor-pointer"
           >
             Escolher Carreira
           </button>

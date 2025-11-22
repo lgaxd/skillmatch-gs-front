@@ -55,12 +55,12 @@ export const ProgressoJornada: React.FC<ProgressoJornadaProps> = ({
         <div className="text-center p-4 bg-blue-50 rounded-lg">
           <div className="text-2xl font-bold text-blue-600">{progressoCursos.cursos_concluidos}</div>
           <div className="text-sm text-blue-800">Cursos Concluídos</div>
-          <div className="text-xs text-blue-600">de {progressoCursos.total_cursos}</div>
+          <div className="text-xs text-blue-600">de {progressoCursos.total_cursos - 4}</div>
         </div>
         <div className="text-center p-4 bg-green-50 rounded-lg">
           <div className="text-2xl font-bold text-green-600">{progressoCursos.cursos_andamento}</div>
           <div className="text-sm text-green-800">Cursos em Andamento</div>
-          <div className="text-xs text-green-600">de {progressoCursos.total_cursos - progressoCursos.cursos_concluidos + " restantes"}</div>
+          <div className="text-xs text-green-600">de {(progressoCursos.total_cursos - 4) - progressoCursos.cursos_concluidos + " restantes"}</div>
         </div>
       </div>
 

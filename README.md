@@ -76,12 +76,12 @@ O projeto busca democratizar o acesso à orientação profissional, conectando t
 - Pessoas impactadas pela automação ou mudanças no mercado
 - Instituições que desejam oferecer trilhas personalizadas de desenvolvimento
 
-## 👥 Equipe
-Projeto desenvolvido por alunos da FIAP como parte da Global Solution 2025/2. Contém contribuições multidisciplinares envolvendo:
+## 👥 Autores
 
-- Engenharia de Software
-- Inteligência Artificial
-- DDD (Domain-Driven Design)
-- Banco de Dados
-- UX/UI
-- Computational Thinking
+| Nome | RM |
+|------|-----|
+| Lucas Grillo Alcântara | RM 561413 |
+| Augusto Buguas Rodrigues | RM 563858 |
+| Pietro Abrahamian | RM 561469 |
+
+Feito com ❤️ pela Equipe SkillMatch para um futuro profissional mais acessível.

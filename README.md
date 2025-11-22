@@ -1,8 +1,5 @@
 # SkillMatch – Plataforma de Requalificação Profissional com IA
 
-## Status do Projeto
-🚧 **Em desenvolvimento**
-
 ## Objetivo
 Auxiliar pessoas em processo de requalificação e recolocação profissional por meio de inteligência artificial, trilhas de aprendizado personalizadas e gamificação.
 
@@ -20,7 +17,7 @@ O projeto busca democratizar o acesso à orientação profissional, conectando t
   - Experiência prévia
   - Estilo de trabalho
   - Interesses e competências
-- Processamento via API de Machine Learning em Python
+- Processamento via API de Machine Learning (atualmente mockado com API Java)
 - Cálculo de coordenadas representativas do perfil
 - Modelo KNN para identificação de carreiras semelhantes
 
@@ -34,7 +31,7 @@ O projeto busca democratizar o acesso à orientação profissional, conectando t
 
 ### 3. Jornada de Skills
 - Conjunto estruturado de habilidades essenciais por carreira
-- Até 5 cursos confiáveis curados por skill
+- 2 cursos confiáveis curados por skill
 - Funcionalidades:
   - Marcação de cursos concluídos
   - Evolução no progresso da carreira
@@ -78,13 +75,6 @@ O projeto busca democratizar o acesso à orientação profissional, conectando t
 - Jovens em transição de carreira
 - Pessoas impactadas pela automação ou mudanças no mercado
 - Instituições que desejam oferecer trilhas personalizadas de desenvolvimento
-
-## 📊 Status Atual de Desenvolvimento
-- [ ] Modelo KNN em ajuste
-- [ ] API Java em implementação
-- [ ] Banco de dados normalizado
-- [ ] Front-end em construção
-- [ ] Integrações sendo estabelecidas
 
 ## 👥 Equipe
 Projeto desenvolvido por alunos da FIAP como parte da Global Solution 2025/2. Contém contribuições multidisciplinares envolvendo:

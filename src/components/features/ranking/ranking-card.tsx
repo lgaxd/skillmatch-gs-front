@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card } from '../../ui/layout/card';
+import { useThemeClasses } from '../../../hooks/use-theme-classes';
 
 interface RankingUsuario {
   posicao: number;
@@ -24,15 +25,17 @@ export const RankingCard: React.FC<RankingCardProps> = ({
   top3Ranking = [],
   onVerRanking
 }) => {
+  const themeClasses = useThemeClasses();
+
   // Se não há dados de ranking, mostrar estado vazio
   if (!ranking) {
     return (
       <Card>
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-800">Ranking Mensal</h2>
+          <h2 className={`text-xl font-bold ${themeClasses.text.primary}`}>Ranking Mensal</h2>
           <button
             onClick={onVerRanking}
-            className="text-indigo-600 hover:text-indigo-700 font-semibold text-sm cursor-pointer"
+            className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-semibold text-sm cursor-pointer"
           >
             Ver ranking completo
           </button>
@@ -40,8 +43,8 @@ export const RankingCard: React.FC<RankingCardProps> = ({
 
         <div className="text-center py-8">
           <div className="text-4xl mb-2">🏆</div>
-          <p className="text-gray-600">Nenhum dado de ranking disponível</p>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className={themeClasses.text.secondary}>Nenhum dado de ranking disponível</p>
+          <p className={`text-sm ${themeClasses.text.muted} mt-1`}>
             Complete cursos para entrar no ranking
           </p>
         </div>
@@ -52,10 +55,10 @@ export const RankingCard: React.FC<RankingCardProps> = ({
   return (
     <Card>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-gray-800">Ranking Mensal</h2>
+        <h2 className={`text-xl font-bold ${themeClasses.text.primary}`}>Ranking Mensal</h2>
         <button
           onClick={onVerRanking}
-          className="text-indigo-600 hover:text-indigo-700 font-semibold text-sm cursor-pointer"
+          className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-semibold text-sm cursor-pointer"
         >
           Ver ranking completo
         </button>
@@ -65,22 +68,22 @@ export const RankingCard: React.FC<RankingCardProps> = ({
         {/* Posição do usuário */}
         <div className={`flex items-center justify-between p-3 rounded-lg border ${
           ranking.posicao <= 3
-            ? 'bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200'
-            : 'bg-gray-50 border-gray-200'
+            ? 'bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 border-yellow-200 dark:border-yellow-700'
+            : `${themeClasses.background} border ${themeClasses.border}`
         }`}>
           <div className="flex items-center gap-3">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
               ranking.posicao === 1 ? 'bg-yellow-500' :
-              ranking.posicao === 2 ? 'bg-gray-400' :
-              ranking.posicao === 3 ? 'bg-orange-500' : 'bg-blue-500'
+              ranking.posicao === 2 ? 'bg-gray-500 dark:bg-gray-600' :
+              ranking.posicao === 3 ? 'bg-orange-500' : 'bg-blue-500 dark:bg-blue-600'
             }`}>
               {ranking.posicao}º
             </div>
-            <span className="font-semibold text-gray-800">Você</span>
+            <span className={`font-semibold ${themeClasses.text.primary}`}>Você</span>
           </div>
           <div className="text-right">
-            <div className="font-bold text-gray-800">{ranking.pontuacao_total.toLocaleString()} XP</div>
-            <div className="text-xs text-gray-600">
+            <div className={`font-bold ${themeClasses.text.primary}`}>{ranking.pontuacao_total.toLocaleString()} XP</div>
+            <div className={`text-xs ${themeClasses.text.secondary}`}>
               {ranking.posicao === 1 ? 'Líder' :
                ranking.posicao <= 3 ? 'Top 3' : 'Em progresso'}
             </div>
@@ -92,18 +95,18 @@ export const RankingCard: React.FC<RankingCardProps> = ({
           <div key={usuario.posicao} className="flex items-center justify-between p-3">
             <div className="flex items-center gap-3">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
-                usuario.posicao === 1 ? 'bg-yellow-400' :
-                usuario.posicao === 2 ? 'bg-gray-400' :
-                'bg-orange-400'
+                usuario.posicao === 1 ? 'bg-yellow-500' :
+                usuario.posicao === 2 ? 'bg-gray-500 dark:bg-gray-600' :
+                'bg-orange-500'
               }`}>
                 {usuario.posicao}º
               </div>
-              <span className="text-gray-700 truncate max-w-[120px]">
+              <span className={`${themeClasses.text.primary} truncate max-w-[120px]`}>
                 {usuario.nome}
               </span>
             </div>
             <div className="text-right">
-              <div className="font-semibold text-gray-700">
+              <div className={`font-semibold ${themeClasses.text.primary}`}>
                 {usuario.pontuacao.toLocaleString()} XP
               </div>
             </div>
@@ -117,19 +120,19 @@ export const RankingCard: React.FC<RankingCardProps> = ({
               <div key={posicao} className="flex items-center justify-between p-3">
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
-                    posicao === 1 ? 'bg-yellow-400' :
-                    posicao === 2 ? 'bg-gray-400' :
-                    'bg-orange-400'
+                    posicao === 1 ? 'bg-yellow-500' :
+                    posicao === 2 ? 'bg-gray-500 dark:bg-gray-600' :
+                    'bg-orange-500'
                   }`}>
                     {posicao}º
                   </div>
-                  <span className="text-gray-700">
+                  <span className={themeClasses.text.primary}>
                     {posicao === 1 ? 'Carregando...' :
                      posicao === 2 ? 'Carregando...' : 'Carregando...'}
                   </span>
                 </div>
                 <div className="text-right">
-                  <div className="font-semibold text-gray-700">
+                  <div className={`font-semibold ${themeClasses.text.primary}`}>
                     {posicao === 1 ? '...' : posicao === 2 ? '...' : '...'} XP
                   </div>
                 </div>

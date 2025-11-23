@@ -2,7 +2,6 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { BackgroundPrincipal } from "../components/background-principal";
 import { SelectPersonalizado } from "../components/ui/forms/select-personalizado";
-import { apiService } from "../services/api";
 
 interface FormData {
   experienciaAnos: string;
@@ -45,7 +44,7 @@ export function FormularioPerfil() {
     faixaSalarial: "",
     mobilidadeGeografica: ""
   });
-  
+
   const [currentSection, setCurrentSection] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -195,7 +194,7 @@ export function FormularioPerfil() {
       ...prev,
       [field]: value
     }));
-    
+
     if (errors[field]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -225,56 +224,7 @@ export function FormularioPerfil() {
 
   const handleSubmit = async () => {
     setIsLoading(true);
-
-    try {
-      // Mapear dados do formulário para o formato esperado pelo KNN
-      const skillsParaKNN = {
-        Engenharia_Software: parseInt(formData.interessesTecnologia) || 5,
-        Analise_Dados: parseInt(formData.habilidadesAnalise) || 5,
-        Gestao_Projetos: parseInt(formData.habilidadesLideranca) || 5,
-        Design_UX: parseInt(formData.interessesCriatividade) || 5,
-        Comunicacao: parseInt(formData.habilidadesComunicacao) || 5,
-        Marketing_Digital: 5,
-        Pensamento_Critico: parseInt(formData.habilidadesAnalise) || 5,
-        Lideranca: parseInt(formData.habilidadesLideranca) || 5,
-        Negociacao: parseInt(formData.habilidadesComunicacao) || 5,
-        Financas: 5,
-        Criatividade: parseInt(formData.interessesCriatividade) || 5
-      };
-
-      console.log("Enviando perfil para KNN:", skillsParaKNN);
-      
-      // Chamar API Flask para recomendações
-      const recomendacoes = await apiService.getRecomendacoesKNN(skillsParaKNN);
-      console.log("Recomendações recebidas:", recomendacoes);
-      
-      // Salvar recomendações no localStorage para usar na página de recomendações
-      localStorage.setItem('recomendacoesKNN', JSON.stringify(recomendacoes));
-      localStorage.setItem('perfilUsuario', JSON.stringify(formData));
-      
-      // Redireciona para as recomendações após processamento
-      navigate("/recomendacoes");
-    } catch (error) {
-      console.error("Erro ao processar perfil:", error);
-      setErrors({ submit: "Erro ao processar seu perfil. Tente novamente." });
-      
-      // Fallback: usar dados mockados se a API falhar
-      const mockRecomendacoes = {
-        perfil_enviado: formData,
-        recomendacoes: [
-          { rank: 1, carreira: "Cientista de Dados", distancia: 0.5 },
-          { rank: 2, carreira: "Engenheiro de Machine Learning", distancia: 0.7 },
-          { rank: 3, carreira: "Analista de BI", distancia: 0.8 },
-          { rank: 4, carreira: "Engenheiro de Dados", distancia: 0.9 },
-          { rank: 5, carreira: "Arquiteto de Cloud", distancia: 1.0 }
-        ]
-      };
-      localStorage.setItem('recomendacoesKNN', JSON.stringify(mockRecomendacoes));
-      localStorage.setItem('perfilUsuario', JSON.stringify(formData));
-      navigate("/recomendacoes");
-    } finally {
-      setIsLoading(false);
-    }
+    navigate("/recomendacoes");
   };
 
   const progress = ((currentSection + 1) / sections.length) * 100;
@@ -282,7 +232,7 @@ export function FormularioPerfil() {
   return (
     <div className="relative min-h-screen py-8 px-4 sm:px-6 lg:px-8">
       <BackgroundPrincipal />
-      
+
       <div className="relative z-10 max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -305,7 +255,7 @@ export function FormularioPerfil() {
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3">
-            <div 
+            <div
               className="bg-indigo-600 h-3 rounded-full transition-all duration-500"
               style={{ width: `${progress}%` }}
             />
@@ -363,11 +313,11 @@ export function FormularioPerfil() {
                 disabled={isLoading}
                 className="px-8 py-3 text-lg font-semibold text-white bg-indigo-600 border border-transparent rounded-xl hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer min-w-[200px]"
               >
-                {isLoading 
-                  ? "Processando..." 
-                  : currentSection === sections.length - 1 
-                  ? "Ver Minhas Recomendações" 
-                  : "Continuar"
+                {isLoading
+                  ? "Processando..."
+                  : currentSection === sections.length - 1
+                    ? "Ver Minhas Recomendações"
+                    : "Continuar"
                 }
               </button>
             </div>
@@ -377,7 +327,7 @@ export function FormularioPerfil() {
         {/* Informação sobre o KNN */}
         <div className="mt-6 text-center">
           <p className="text-white text-sm opacity-80">
-            💡 Seus dados serão processados por nosso algoritmo de IA (KNN) para encontrar 
+            💡 Seus dados serão processados por nosso algoritmo de IA (KNN) para encontrar
             as carreiras mais alinhadas com seu perfil
           </p>
         </div>

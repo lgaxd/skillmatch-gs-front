@@ -10,6 +10,10 @@ A solução utiliza técnicas de Machine Learning (KNN) para recomendar carreira
 
 O projeto busca democratizar o acesso à orientação profissional, conectando tecnologia, educação e impacto social.
 
+## Demonstração
+
+https://www.youtube.com/watch?v=moQ8BnQwgik
+
 ## ✨ Principais Funcionalidades
 
 ### 1. Mapeamento de Perfil Profissional

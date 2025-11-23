@@ -14,6 +14,14 @@ O projeto busca democratizar o acesso à orientação profissional, conectando t
 
 https://www.youtube.com/watch?v=moQ8BnQwgik
 
+## Link do repositório
+
+https://github.com/lgaxd/skillmatch-gs-front/
+
+## Link da aplicação
+
+https://skillmatch-gs-front.vercel.app/
+
 ## ✨ Principais Funcionalidades
 
 ### 1. Mapeamento de Perfil Profissional

@@ -10,7 +10,7 @@ export function BackgroundPrincipal() {
                 backgroundImage: `url(${bg})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
-                zIndex: 0,
+                zIndex: -10,
                 pointerEvents: 'none',
             }}
         >

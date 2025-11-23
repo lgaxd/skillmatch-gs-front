@@ -1,73 +1,91 @@
-# React + TypeScript + Vite
+# SkillMatch – Plataforma de Requalificação Profissional com IA
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Objetivo
+Auxiliar pessoas em processo de requalificação e recolocação profissional por meio de inteligência artificial, trilhas de aprendizado personalizadas e gamificação.
 
-Currently, two official plugins are available:
+## Visão Geral
+O SkillMatch é uma plataforma desenvolvida como parte da Global Solution FIAP 2025/2, com o propósito de apoiar trabalhadores que desejam migrar de carreira ou fortalecer suas competências em áreas emergentes do mercado.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+A solução utiliza técnicas de Machine Learning (KNN) para recomendar carreiras com base no perfil profissional do usuário e oferece uma jornada estruturada de aprendizado composta por skills, cursos, e um sistema de progressão baseada em pontos (XP).
 
-## React Compiler
+O projeto busca democratizar o acesso à orientação profissional, conectando tecnologia, educação e impacto social.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Demonstração
 
-## Expanding the ESLint configuration
+https://www.youtube.com/watch?v=moQ8BnQwgik
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## ✨ Principais Funcionalidades
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### 1. Mapeamento de Perfil Profissional
+- Questionário abrangendo:
+  - Experiência prévia
+  - Estilo de trabalho
+  - Interesses e competências
+- Processamento via API de Machine Learning (atualmente mockado com API Java)
+- Cálculo de coordenadas representativas do perfil
+- Modelo KNN para identificação de carreiras semelhantes
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### 2. Recomendação Inteligente de Carreiras
+- Top 5 carreiras mais alinhadas ao perfil
+- Informações por carreira:
+  - Área de atuação
+  - Nível de demanda no mercado
+  - Descrição detalhada
+- Seleção da carreira para início da jornada
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### 3. Jornada de Skills
+- Conjunto estruturado de habilidades essenciais por carreira
+- 2 cursos confiáveis curados por skill
+- Funcionalidades:
+  - Marcação de cursos concluídos
+  - Evolução no progresso da carreira
+  - Dashboard de acompanhamento em tempo real
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 4. Gamificação e Ranking
+- Sistema de pontos (XP) por avanço nas skills
+- Mecânicas de engajamento:
+  - Progresso percentual da jornada
+  - Conquista de medalhas
+  - Ranking mensal de usuários
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 5. Aderência a ODS (Objetivos de Desenvolvimento Sustentável)
+- **ODS 4**: Educação de qualidade
+- **ODS 8**: Trabalho decente e crescimento econômico
+- **ODS 9**: Inovação e infraestrutura
+- **ODS 10**: Redução das desigualdades
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 🏗️ Arquitetura da Solução
+
+### Front-end
+- React + Vite + TypeScript
+- Tailwind CSS
+
+### Back-end
+- Java (Quarkus)
+
+### Machine Learning
+- Python (Flask)
+- Algoritmo KNN
+
+### Banco de Dados
+- Oracle
+
+### DevOps
+- **Versionamento**: GitHub
+- **Deploy**: Vercel (front-end), Servidor On-Premises (back-end), Oracle Cloud (banco de dados)
+
+## 🎯 Público-Alvo
+- Profissionais buscando requalificação
+- Jovens em transição de carreira
+- Pessoas impactadas pela automação ou mudanças no mercado
+- Instituições que desejam oferecer trilhas personalizadas de desenvolvimento
+
+## 👥 Autores
+
+| Nome | RM |
+|------|-----|
+| Lucas Grillo Alcântara | RM 561413 |
+| Augusto Buguas Rodrigues | RM 563858 |
+| Pietro Abrahamian | RM 561469 |
+
+Feito com ❤️ pela Equipe SkillMatch para um futuro profissional mais acessível.
